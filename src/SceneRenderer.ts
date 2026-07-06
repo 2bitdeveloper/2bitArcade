@@ -108,9 +108,11 @@ export class SceneRenderer {
         this.wrappedAboutDeveloperText = this.wrapText(this.game.ctx, "Developed by: 2bit Developer", this.game.isLandscape ? maxAboutWidth : this.game.canvas.width - 300 * this.game.screenScale);
         
         this.game.ctx.font = `${this.game.isLandscape ? 45 * this.game.screenScale : 65 * this.game.screenScale}px "VT323", monospace`;
-        const tokenomicsString = "TOTAL SUPPLY: 1,000,000,000 $TICKER | " +
+        const tokenomicsString = "TOTAL SUPPLY: 1,000,000,000 $JMP | " +
                                  "DEV WALLET: 2% (20,000,000) reserved for developer. | " +
-                                 "DEFLATIONARY: Revives burn 1,000 $TICKER, shrinking supply.";
+                                 "DEFLATIONARY: Revives burn 1,000 $JMP, shrinking supply. | " +
+                                 "DAILY REWARD: Top 3 pilots each day get ALL modes & ships unlocked for 24 hours. | " +
+                                 "WEEKLY REWARD: Top 10 pilots each week get ALL unlocked for 72 hours.";
         this.wrappedTokenomicsText = this.wrapText(this.game.ctx, tokenomicsString, maxAboutWidth);
 
         this.updateTouchRects();
@@ -121,22 +123,26 @@ export class SceneRenderer {
         const arrowW = 60 * scale, arrowH = 60 * scale;
 
         if (this.game.isLandscape) {
-            const leftColCx = width * 0.30, rightColCx = width * 0.70;
-            const menuY = height / 2 + 80 * scale, arrowOffset = 280 * scale;
+            // --- MAIN MENU: single centered column ---
+            // Logo (raised) -> DIFFICULTY -> OBSTACLES -> TAP TO START -> CONNECT WALLET -> TOKENOMICS -> CA
+            // In landscape, scale = height / 1080, so height === 1080 * scale on every screen.
+            const selArrowOffset = 300 * scale, selArrowH = 50 * scale;
+            const diffY = 500 * scale; // directly below the raised title logo
+            const obsY = 615 * scale;  // stacked under the difficulty row
 
-            this.menuDiffLeftArrowRect.set(leftColCx - arrowOffset - arrowW, menuY - arrowH, leftColCx - arrowOffset + arrowW, menuY + arrowH);
-            this.menuDiffRightArrowRect.set(leftColCx + arrowOffset - arrowW, menuY - arrowH, leftColCx + arrowOffset + arrowW, menuY + arrowH);
-            this.menuLeftArrowRect.set(rightColCx - arrowOffset - arrowW, menuY - arrowH, rightColCx - arrowOffset + arrowW, menuY + arrowH);
-            this.menuRightArrowRect.set(rightColCx + arrowOffset - arrowW, menuY - arrowH, rightColCx + arrowOffset + arrowW, menuY + arrowH);
+            this.menuDiffLeftArrowRect.set(cx - selArrowOffset - arrowW, diffY - selArrowH, cx - selArrowOffset + arrowW, diffY + selArrowH);
+            this.menuDiffRightArrowRect.set(cx + selArrowOffset - arrowW, diffY - selArrowH, cx + selArrowOffset + arrowW, diffY + selArrowH);
+            this.menuLeftArrowRect.set(cx - selArrowOffset - arrowW, obsY - selArrowH, cx - selArrowOffset + arrowW, obsY + selArrowH);
+            this.menuRightArrowRect.set(cx + selArrowOffset - arrowW, obsY - selArrowH, cx + selArrowOffset + arrowW, obsY + selArrowH);
 
-            // Below the active-pilots / tokens-burned stats block (stats end around y = 130 * scale)
-            this.menuTokenomicsRect.set(50 * scale, 190 * scale, 350 * scale, 280 * scale);
             this.settingsCloseRect.set(width - 150 * scale, 50 * scale, width - 50 * scale, 150 * scale); 
             this.menuSettingsRect.setRect(this.settingsCloseRect);
             
-            const startY = height - 280 * scale; 
-            this.menuTapToStartRect.set(cx - 200 * scale, startY - 50 * scale, cx + 200 * scale, startY + 30 * scale);
-            this.menuWalletRect.set(cx - 220 * scale, startY + 50 * scale, cx + 220 * scale, startY + 110 * scale);
+            // Bottom stack, spread across the lower half instead of piled at the edge:
+            // TAP TO START (centered at 760) -> CONNECT WALLET (865) -> TOKENOMICS (950) -> CA (1040)
+            this.menuTapToStartRect.set(cx - 250 * scale, 705 * scale, cx + 250 * scale, 815 * scale);
+            this.menuWalletRect.set(cx - 260 * scale, 825 * scale, cx + 260 * scale, 905 * scale);
+            this.menuTokenomicsRect.set(cx - 220 * scale, 912 * scale, cx + 220 * scale, 988 * scale);
             
             const caY = height - 40 * scale;
             this.menuCaRect.set(cx - 350 * scale, caY - 30 * scale, cx + 350 * scale, caY + 30 * scale);
@@ -184,8 +190,8 @@ export class SceneRenderer {
             this.leaderboardLeftArrowRect.set(cx - 550 * scale, height / 2 - 80 * scale, cx - 400 * scale, height / 2 + 80 * scale);
             this.leaderboardRightArrowRect.set(cx + 400 * scale, height / 2 - 80 * scale, cx + 550 * scale, height / 2 + 80 * scale);
         } else {
-            const titleBottom = 100 * scale + ((1152 * scale / 2) * 1.15);
-            const diffY = titleBottom + 300 * scale; // pushed down to make room for the tokenomics button
+            const titleBottom = 50 * scale + ((1152 * scale / 2) * 1.15);
+            const diffY = titleBottom + 130 * scale; // difficulty row sits directly below the logo
             const mainSpacing = Math.min(250 * scale, (height - diffY - 450 * scale) / 2);
 
             this.menuDiffLeftArrowRect.set(cx - 450 * scale, diffY - 70 * scale, cx - 350 * scale, diffY + 70 * scale);
@@ -194,8 +200,8 @@ export class SceneRenderer {
             this.menuLeftArrowRect.set(cx - 450 * scale, obsY - 70 * scale, cx - 350 * scale, obsY + 70 * scale);
             this.menuRightArrowRect.set(cx + 350 * scale, obsY - 70 * scale, cx + 450 * scale, obsY + 70 * scale);
 
-            // Centered directly below the title logo, above the difficulty selector
-            this.menuTokenomicsRect.set(cx - 300 * scale, titleBottom + 20 * scale, cx + 300 * scale, titleBottom + 150 * scale);
+            // Centered below the obstacle selector (logo -> difficulty -> obstacles -> tokenomics)
+            this.menuTokenomicsRect.set(cx - 300 * scale, obsY + 130 * scale, cx + 300 * scale, obsY + 260 * scale);
             this.menuSettingsRect.set(width - 350 * scale, 50 * scale, width - 50 * scale, 180 * scale);
             
             const startY = height - 380 * scale; 
@@ -252,6 +258,21 @@ export class SceneRenderer {
         }
     }
 
+    public drawRotatePrompt(ctx: CanvasRenderingContext2D) {
+        const w = this.game.canvas.width, h = this.game.canvas.height, scale = this.game.screenScale;
+        ctx.fillStyle = "black"; ctx.fillRect(0, 0, w, h);
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.save();
+        ctx.shadowColor = "rgb(255, 165, 0)"; ctx.shadowBlur = 30 * scale;
+        ctx.fillStyle = "white"; ctx.font = `${140 * scale}px "VT323", monospace`;
+        ctx.fillText("\u21BB", w / 2, h / 2 - 160 * scale);
+        ctx.font = `${80 * scale}px "VT323", monospace`;
+        ctx.fillText("ROTATE YOUR DEVICE", w / 2, h / 2);
+        ctx.restore();
+        ctx.fillStyle = "gray"; ctx.font = `${45 * scale}px "VT323", monospace`;
+        ctx.fillText("JUMP FIGHTER is a landscape experience", w / 2, h / 2 + 110 * scale);
+    }
+
     public drawGlowText(ctx: CanvasRenderingContext2D, text: string, rect: RectF, textSize: number, color: string = "white") {
         ctx.fillStyle = color; ctx.font = `${textSize}px "VT323", monospace`;
         ctx.shadowColor = color === "white" ? "rgb(255, 165, 0)" : "rgb(255, 0, 0)";
@@ -297,7 +318,7 @@ export class SceneRenderer {
             ctx.drawImage(loadingBmp, (this.game.canvas.width - dw) / 2, (this.game.canvas.height - dh) / 2, dw, dh);
         }
 
-        const ty = this.game.isLandscape ? 120 * this.game.screenScale : 100 * this.game.screenScale;
+        const ty = this.game.isLandscape ? 60 * this.game.screenScale : 50 * this.game.screenScale;
 
         if (this.titleBitmap && this.titleBitmap.complete && this.titleBitmap.naturalWidth > 0) {
             const currentFrame = Math.floor((Date.now() / 20) % this.totalTitleFrames);
@@ -330,6 +351,12 @@ export class SceneRenderer {
         const statsY = 40 * this.game.screenScale;
         ctx.fillText("● " + this.game.activePilotsStr, statsX, statsY);
         ctx.fillText("● " + this.game.tokensBurnedStr, statsX, statsY + (this.game.isLandscape ? 45 : 60) * this.game.screenScale);
+        if (this.game.hasRewardUnlock()) {
+            const msLeft = this.game.rewardUnlockUntil - Date.now();
+            const hLeft = Math.floor(msLeft / 3600000), mLeft = Math.floor((msLeft % 3600000) / 60000);
+            ctx.fillStyle = "#FFD700"; ctx.shadowColor = "rgb(255, 215, 0)";
+            ctx.fillText(`★ CHAMPION UNLOCK: ${hLeft}h ${mLeft}m`, statsX, statsY + 2 * (this.game.isLandscape ? 45 : 60) * this.game.screenScale);
+        }
         ctx.restore();
 
         this.drawGlowText(ctx, "SETTINGS", this.menuSettingsRect, this.game.isLandscape ? 50 * this.game.screenScale : 75 * this.game.screenScale);
@@ -338,40 +365,52 @@ export class SceneRenderer {
         ctx.fillStyle = "white"; ctx.font = `${this.game.isLandscape ? 55 * this.game.screenScale : 72 * this.game.screenScale}px "VT323", monospace`;
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
-        const isObsUnlocked = this.game.isDevMode || this.game.tokenBalance >= this.game.obsTokenThresholds[this.game.obstacleMode];
+        const isObsUnlocked = this.game.isObstacleModeUnlocked(this.game.obstacleMode);
         let obsDisplayStr = this.game.obstacleStatusStr;
-        
+
+        // Orange glow on the difficulty/obstacle selectors (red when locked), matching drawGlowText
+        ctx.save();
+        ctx.shadowColor = "rgb(255, 165, 0)";
+        ctx.shadowBlur = 30 * this.game.screenScale;
+
         if (this.game.isLandscape) {
-            ctx.fillText(this.game.diffStatusStr, this.game.canvas.width * 0.30, this.menuDiffLeftArrowRect.centerY() + 15 * this.game.screenScale);
+            const menuCx = this.game.canvas.width / 2;
+            ctx.fillText(this.game.diffStatusStr, menuCx, this.menuDiffLeftArrowRect.centerY() + 15 * this.game.screenScale);
+            
+            if (!isObsUnlocked) { ctx.fillStyle = "#FF5555"; ctx.shadowColor = "rgb(255, 0, 0)"; }
+            ctx.fillText(this.game.obstacleStatusStr, menuCx, this.menuLeftArrowRect.centerY() + 15 * this.game.screenScale);
             
             if (!isObsUnlocked) {
-                obsDisplayStr = `LOCKED (${this.game.obsTokenThresholds[this.game.obstacleMode] / 1000}k $TICKER)`;
-                ctx.fillStyle = "#FF5555";
+                // Holding requirement, not a price: checked against the connected wallet's balance
+                ctx.font = `${34 * this.game.screenScale}px "VT323", monospace`;
+                ctx.fillStyle = "#FF8888";
+                ctx.fillText(`HOLD ${this.game.obsTokenThresholds[this.game.obstacleMode].toLocaleString()} $JMP IN WALLET TO UNLOCK`, menuCx, this.menuLeftArrowRect.centerY() + 75 * this.game.screenScale);
             }
-            ctx.fillText(obsDisplayStr, this.game.canvas.width * 0.70, this.menuLeftArrowRect.centerY() + 15 * this.game.screenScale);
         } else {
             ctx.fillText(this.game.diffStatusStr, this.game.canvas.width / 2, this.menuDiffLeftArrowRect.centerY() + 25 * this.game.screenScale);
             
             if (!isObsUnlocked) {
-                obsDisplayStr = `LOCKED (${this.game.obsTokenThresholds[this.game.obstacleMode] / 1000}k $TICKER)`;
-                ctx.fillStyle = "#FF5555";
+                obsDisplayStr = `LOCKED (${this.game.obsTokenThresholds[this.game.obstacleMode] / 1000}k $JMP)`;
+                ctx.fillStyle = "#FF5555"; ctx.shadowColor = "rgb(255, 0, 0)";
             }
             ctx.fillText(obsDisplayStr, this.game.canvas.width / 2, this.menuLeftArrowRect.centerY() + 25 * this.game.screenScale);
         }
 
         ctx.fillStyle = "white";
+        ctx.shadowColor = "rgb(255, 165, 0)"; // arrows always glow orange, even when the mode is locked
         ctx.font = `${this.game.isLandscape ? 60 * this.game.screenScale : 135 * this.game.screenScale}px "VT323", monospace`;
         ctx.fillText("<", this.menuDiffLeftArrowRect.centerX(), this.menuDiffLeftArrowRect.centerY() + (this.game.isLandscape ? 20 : 45) * this.game.screenScale);
         ctx.fillText(">", this.menuDiffRightArrowRect.centerX(), this.menuDiffRightArrowRect.centerY() + (this.game.isLandscape ? 20 : 45) * this.game.screenScale);
         ctx.fillText("<", this.menuLeftArrowRect.centerX(), this.menuLeftArrowRect.centerY() + (this.game.isLandscape ? 20 : 45) * this.game.screenScale);
         ctx.fillText(">", this.menuRightArrowRect.centerX(), this.menuRightArrowRect.centerY() + (this.game.isLandscape ? 20 : 45) * this.game.screenScale);
+        ctx.restore();
 
         const startText = isObsUnlocked ? "TAP TO START" : "MODE LOCKED";
         const startColor = isObsUnlocked ? "white" : "#FF5555";
         this.drawGlowText(ctx, startText, this.menuTapToStartRect, this.game.isLandscape ? 70 * this.game.screenScale : 112 * this.game.screenScale, startColor);
         
         const walletString = this.game.walletConnected
-            ? `${this.game.watchOnlyMode ? "[WATCH] " : ""}BAL: ${Math.floor(this.game.tokenBalance).toLocaleString()} $TICKER`
+            ? `${this.game.watchOnlyMode ? "[WATCH] " : ""}BAL: ${Math.floor(this.game.tokenBalance).toLocaleString()} $JMP`
             : "CONNECT WALLET";
         this.drawGlowText(ctx, walletString, this.menuWalletRect, this.game.isLandscape ? 40 * this.game.screenScale : 65 * this.game.screenScale);
         

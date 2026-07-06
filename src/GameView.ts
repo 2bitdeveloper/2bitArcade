@@ -51,7 +51,7 @@ export class GameView {
     // --> ADD YOUR LAUNCH ADDRESSES HERE <--
     public readonly CONTRACT_ADDRESS = "YOUR_CA_HERE";
     public readonly TARGET_TOKEN_MINT = "YOUR_TOKEN_MINT_ADDRESS_HERE";
-   
+    public readonly BURN_WALLET_ADDRESS = "11111111111111111111111111111111"; // Standard Solana Incinerator
     
     // RPC endpoint used for all on-chain reads/writes.
     // NOTE: The public mainnet endpoint is heavily rate-limited and often rejects
@@ -64,6 +64,8 @@ export class GameView {
     public tokenBalance: number = 0;
     public readonly REVIVE_COST = 1000; 
     
+    public rewardUnlockUntil: number = 0; // epoch ms; nonzero while this pilot holds an active leaderboard reward
+
     public activePilotsStr = "Syncing...";
     public tokensBurnedStr = "Syncing...";
     public caCopiedTimer: number = 0;
@@ -171,6 +173,12 @@ export class GameView {
         return this.memoryStorage[key] || null;
     }
 
+    // The single source of truth for this player's leaderboard identity.
+    // Score submission and reward lookup MUST use the same name.
+    private get leaderboardPlayerName(): string {
+        return this.walletConnected && this.userPublicKey ? `WL_${this.userPublicKey.substring(0, 6)}` : this.sessionPlayerName;
+    }
+
     // ============================================================
     // --- SECURE PATH A: TELEMETRY VALIDATION SYSTEM ---
     // ============================================================
@@ -189,7 +197,7 @@ export class GameView {
         if (this.telemetryLog.length === 0) return;
         
         const boardKey = this.boardIds[(diff * 3) + mode];
-        const playerName = this.walletConnected && this.userPublicKey ? `WL_${this.userPublicKey.substring(0, 6)}` : this.sessionPlayerName;
+        const playerName = this.leaderboardPlayerName;
         const edgeFunctionUrl = `${this.supabaseUrl}/functions/v1/validate-score`;
 
         try {
@@ -236,6 +244,22 @@ export class GameView {
     private fetchGlobalStats() {
         this.fetchActivePilots();
         this.fetchTokensBurned();
+        this.fetchActiveReward();
+    }
+
+    // Checks whether this pilot currently holds a daily top-3 or weekly
+    // top-10 leaderboard reward (granted server-side by scheduled jobs).
+    public async fetchActiveReward() {
+        try {
+            const res = await fetch(`${this.supabaseUrl}/rest/v1/rpc/get_active_reward`, {
+                method: 'POST',
+                headers: { 'apikey': this.supabaseKey, 'Authorization': `Bearer ${this.supabaseKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ p_player: this.leaderboardPlayerName })
+            });
+            const expires = await res.json(); // ISO timestamp or null
+            this.rewardUnlockUntil = (typeof expires === 'string') ? new Date(expires).getTime() : 0;
+            await this.evaluateShipUnlocks(); this.updateStringCache();
+        } catch (e) { /* RPC not deployed yet or network failure - unlocks fall back to token balance */ }
     }
 
     private async fetchActivePilots() {
@@ -428,7 +452,7 @@ export class GameView {
                 return false;
             }
 
-            console.log(`[BURN] Confirmed. ${amount} $TICKER permanently destroyed. Sig: ${signature}`);
+            console.log(`[BURN] Confirmed. ${amount} $JMP permanently destroyed. Sig: ${signature}`);
 
             // 7. Update local state + notify backend (fire-and-forget).
             this.tokenBalance -= amount;
@@ -465,6 +489,9 @@ export class GameView {
         if (this.isLandscape) { this.screenScale = this.canvas.height / this.BASE_DIMENSION; this.birdX = 350 * this.screenScale; } 
         else { this.screenScale = this.canvas.width / this.BASE_DIMENSION; this.birdX = 200 * this.screenScale; }
         this.birdY = this.canvas.height / 2.0;
+        if (!this.isLandscape && (this.currentState === GameState.PLAYING || this.currentState === GameState.COUNTDOWN)) {
+            this.currentState = GameState.PAUSED; // rotating away mid-run pauses instead of killing the pilot
+        }
         this.renderer.initBitmaps(this.canvas.width, this.canvas.height);
         this.renderer.updateLayout(); this.applyDifficulty();
     }
@@ -566,6 +593,7 @@ export class GameView {
     }
 
     private async handleVirtualKey(code: string) {
+        if (!this.isLandscape) return; // rotate prompt is showing
         if (code === 'Space') {
             if (this.audio.isMusicEnabled) this.audio.resumeMusic(this.bgColorIndex);
             if (this.currentState === GameState.PLAYING) { this.hasStartedFalling = true; this.velocity = this.jumpForce; this.isBoosting = true; } 
@@ -631,6 +659,7 @@ export class GameView {
                         this.walletConnected = true; this.watchOnlyMode = false; (window as any).activeSolanaProvider = provider;
                         await this.setData('watchAddress', ''); // extension wallet supersedes any saved watch address
                         await this.syncOnChainTokenBalance();
+                        this.fetchActiveReward(); // identity changed to WL_... - re-check for an active reward
                         this.audio.playClickSound(); document.body.removeChild(overlay);
                     } catch (err) { console.error(`${name} link authorization rejected`, err); }
                 } else { window.open(downloadUrl, "_blank"); }
@@ -685,7 +714,7 @@ export class GameView {
         modal.appendChild(title);
 
         const hint = document.createElement("p");
-        hint.innerText = "Pump.fun players: open pump.fun, tap your profile picture, and copy your wallet address. Holding $TICKER there unlocks modes, ships & backgrounds. NOTE: revives (token burns) need a signing wallet - import your pump.fun key into Phantom to use them.";
+        hint.innerText = "Pump.fun players: open pump.fun, tap your profile picture, and copy your wallet address. Holding $JMP there unlocks modes, ships & backgrounds. NOTE: revives (token burns) need a signing wallet - import your pump.fun key into Phantom to use them.";
         hint.style.cssText = "color:#AAA; font-size:19px; line-height:1.35; margin:0 0 20px 0; text-align:left;";
         modal.appendChild(hint);
 
@@ -738,6 +767,7 @@ export class GameView {
         (window as any).activeSolanaProvider = null;
         await this.setData('watchAddress', this.userPublicKey);
         await this.syncOnChainTokenBalance();
+        this.fetchActiveReward(); // identity changed to WL_... - re-check for an active reward
         console.log(`[WALLET] Watch-only connection: ${this.userPublicKey}`);
     }
 
@@ -764,6 +794,7 @@ export class GameView {
     }
 
     private async handleInput(x: number, y: number) {
+        if (!this.isLandscape) return; // rotate prompt is showing
         if (this.audio.isMusicEnabled) this.audio.resumeMusic(this.bgColorIndex);
 
         if (this.currentState === GameState.MENU) {
@@ -775,7 +806,7 @@ export class GameView {
             }
             if (this.renderer.menuWalletRect.contains(x, y)) { this.audio.playClickSound(); await this.connectSolanaWallet(); }
             if (this.renderer.menuTapToStartRect.contains(x, y)) { 
-                if (!this.isDevMode && this.tokenBalance < this.obsTokenThresholds[this.obstacleMode]) {
+                if (!this.isObstacleModeUnlocked(this.obstacleMode)) {
                     this.audio.playExplosionSound(); return; 
                 }
                 this.audio.playClickSound(); this.resetGame(); this.currentState = GameState.PLAYING;
@@ -955,6 +986,9 @@ export class GameView {
         if (this.shakeTimer > 0) { this.ctx.translate((Math.random() * 20) - 10, (Math.random() * 20) - 10); this.shakeTimer--; }
         this.ctx.fillStyle = 'black'; this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // Landscape-only game: portrait devices get a rotate prompt instead of a layout
+        if (!this.isLandscape) { this.renderer.drawRotatePrompt(this.ctx); this.ctx.restore(); return; }
+
         if (this.currentState === GameState.PLAYING || this.currentState === GameState.MENU || this.currentState === GameState.HANGAR) { this.renderer.updateNebulaState(dt); }
         this.renderer.drawMainBackground(this.ctx);
         if (this.currentState === GameState.PLAYING || this.currentState === GameState.PAUSED) { this.renderer.drawParallax(this.ctx); }
@@ -977,13 +1011,15 @@ export class GameView {
         this.ctx.restore();
     }
 
-    public async evaluateShipUnlocks() { this.unlockedShips[0] = true; for (let i = 1; i < this.shipResIds.length; i++) { this.unlockedShips[i] = this.tokenBalance >= this.shipTokenThresholds[i]; } }
+    public hasRewardUnlock(): boolean { return Date.now() < this.rewardUnlockUntil; }
+    public isObstacleModeUnlocked(mode: number): boolean { return this.isDevMode || this.hasRewardUnlock() || this.tokenBalance >= this.obsTokenThresholds[mode]; }
+    public async evaluateShipUnlocks() { this.unlockedShips[0] = true; for (let i = 1; i < this.shipResIds.length; i++) { this.unlockedShips[i] = this.hasRewardUnlock() || this.tokenBalance >= this.shipTokenThresholds[i]; } }
     public isShipUnlocked(index: number): boolean { if (this.isDevMode) return true; return this.unlockedShips[index] || false; }
-    public isBackgroundUnlocked(index: number): boolean { if (this.isDevMode) return true; return this.tokenBalance >= this.bgTokenThresholds[index]; }
+    public isBackgroundUnlocked(index: number): boolean { if (this.isDevMode) return true; return this.hasRewardUnlock() || this.tokenBalance >= this.bgTokenThresholds[index]; }
 
     public getShipTitle(index: number): string { switch (index) { case 0: return "THE COSMIC VANGUARD"; case 1: return "EXO-117"; case 2: return "HELIOS VANGUARD"; case 3: return "EMERALD DREADNOUGHT"; case 4: return "OBSIDIAN FURY"; case 5: return "STARSHIP ODYSSEY"; default: return "UNKNOWN SHIP"; } }
     public getShipFullDescription(index: number): string { let d = ""; let m = 0; let i = ""; switch (index) { case 0: d = "A reliable interceptor balanced for all missions."; m = 1; break; case 1: d = "A tactical fighter designed for high-speed evasion."; m = 2; break; case 2: d = "An elegant royal guard vessel with solar fins."; m = 3; break; case 3: d = "A heavy-armored siege bomber with fusion bay."; m = 5; break; case 4: d = "Classified stealth striker. Built on volatile plasma."; i = " Starts with 1 shield."; m = 5; break; case 5: d = "A legendary deep-space pioneer. Max firepower."; i = " Starts with 2 shields, gains 1 every 20 pts."; m = 5; break; } return `${d} ${i} (Max shields: ${m})`; }
-    public getShipUnlockCondition(index: number): string { if (index === 0) return "Unlocked by default."; return `Hold ${this.shipTokenThresholds[index].toLocaleString()} $TICKER Tokens`; }
+    public getShipUnlockCondition(index: number): string { if (index === 0) return "Unlocked by default."; return `Hold ${this.shipTokenThresholds[index].toLocaleString()} $JMP Tokens`; }
 
     public resetGame() {
         this.birdY = this.canvas.height / 2; this.velocity = 0; this.shipRotation = 0; this.score = 0; this.scoreStr = "Score: 0"; this.obstacles = [];
