@@ -13,6 +13,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         jumpfighter: resolve(__dirname, 'jumpfighter.html'),
         origami: resolve(__dirname, 'origami.html'),
+        debris: resolve(__dirname, 'debris.html'),
       },
     },
   },

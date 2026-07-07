@@ -30,6 +30,13 @@ const GAMES = [
         url: './jumpfighter.html',
     },
     {
+        id: 'debris',
+        title: 'DEBRIS FIELD',
+        desc: 'Classic vector combat. Blast the drifting debris before it blasts you \u2014 pure arcade reflexes, every run scored on the champion boards.',
+        img: './arcade/debris_arcade.png',
+        url: './debris.html',
+    },
+    {
         id: 'soon',
         title: 'MORE GAMES COMING',
         desc: 'A new cabinet is being wired up. Hold $2BA, climb the boards, and watch this space.',
@@ -61,6 +68,10 @@ function buildSusan() {
         if (g.img) {
             const img = document.createElement('img');
             img.src = g.img; img.alt = g.title; img.draggable = false;
+            // Cabinet art not uploaded yet? Fall back to a styled title card
+            img.onerror = () => {
+                panel.innerHTML = `<div class="soon-card"><span>\u25B6</span><p>${g.title.replace(' ', '<br>')}</p></div>`;
+            };
             panel.appendChild(img);
         } else {
             panel.classList.add('coming-soon');
