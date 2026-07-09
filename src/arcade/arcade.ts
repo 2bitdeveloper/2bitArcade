@@ -7,12 +7,14 @@
 import { playIntroVideo } from '../IntroVideo';
 
 // --- SHARED ARCADE CONFIG (keep in sync with the games) ---
-const CONTRACT_ADDRESS = "YOUR_CA_HERE";
-const TARGET_TOKEN_MINT = "YOUR_TOKEN_MINT_ADDRESS_HERE";
-const SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com";
-const SUPABASE_URL = "https://drawbbapvytjytvbedtl.supabase.co";
-const SUPABASE_KEY = "sb_publishable_zzdZsO1BCunEfdGwur6M4g_nUjW5pa2";
-const INITIAL_TOKEN_SUPPLY = 1_000_000_000;
+// All token/backend config comes from the single source of truth
+// (arcade-config.js -> window.ARCADE_CONFIG). Edit that ONE file at launch.
+const CONTRACT_ADDRESS = window.ARCADE_CONFIG.CONTRACT_ADDRESS;
+const TARGET_TOKEN_MINT = window.ARCADE_CONFIG.TOKEN_MINT;
+const SOLANA_RPC_URL = window.ARCADE_CONFIG.SOLANA_RPC_URL;
+const SUPABASE_URL = window.ARCADE_CONFIG.SUPABASE_URL;
+const SUPABASE_KEY = window.ARCADE_CONFIG.SUPABASE_KEY;
+const INITIAL_TOKEN_SUPPLY = window.ARCADE_CONFIG.INITIAL_TOKEN_SUPPLY;
 
 // defaultFeatured: seeds the lazy Susan until enough ratings exist to rank it.
 // category: drives the catalog filter chips.
@@ -66,6 +68,27 @@ const GAMES: Game[] = [
         desc: 'An original 2bitArcade cabinet. A pixel robot dashes through an endless neon cyber city \u2014 leap the barriers, duck the drones, and outrun a speed that never stops climbing. Distance is everything.',
         img: './arcade/neonrunner_arcade.png',
         url: './neonrunner.html',
+    },
+    {
+        id: 'neonracer', category: 'Racing',
+        title: 'NEON NIGHT RACER',
+        desc: 'Weave through neon traffic at full throttle in this synthwave highway racer. Three lives, no brakes on ambition \u2014 dodge cars and stay on the road as lanes tighten the farther you push. Distance driven is your score.',
+        img: './arcade/neonracer_arcade.png',
+        url: './neonracer.html',
+    },
+    {
+        id: 'sunsetdrift', category: 'Racing',
+        title: 'SUNSET DRIFT',
+        desc: 'An original 2bitArcade cabinet \u2014 an early-90s style pseudo-3D canyon racer. Carve curving mountain roads into the sunset, crest hills, and weave past traffic. Pure arcade driving; the farther you get, the higher you rank.',
+        img: './arcade/sunsetdrift_arcade.png',
+        url: './sunsetdrift.html',
+    },
+    {
+        id: 'junglestrike', category: 'Run & Gun',
+        title: 'JUNGLE STRIKE',
+        desc: 'An original 2bitArcade run-and-gun. Fight through four stages \u2014 jungle, river, cave, and the enemy base \u2014 each with its own look, enemies, and end boss. Grab spread, machine-gun, and laser power-ups. Run, jump, aim 8 ways, survive.',
+        img: './arcade/junglestrike_arcade.png',
+        url: './junglestrike.html',
     },
 ];
 
@@ -126,7 +149,7 @@ function buildSusan() {
         panel.addEventListener('click', () => {
             if (Date.now() - lastSwipeAt < 350) return; // that "click" was the end of a swipe
             const target = parseInt(panel.dataset.index!);
-            if (target === susanIndex && FEATURED[target].url) { launchGame(FEATURED[target].url!); return; }
+            if (target === susanIndex && FEATURED[target].url) { attemptLaunch(FEATURED[target].url!); return; }
             rotateTo(target);
         });
         ring.appendChild(panel);
@@ -175,6 +198,103 @@ function startAutoSpin() {
 }
 
 function launchGame(url: string) { window.location.href = url; }
+
+// ---------- ACCESS GATE (wallet + username required; 8h free trial; then >=1000 $2BA) ----------
+async function checkAccess(): Promise<{ allowed: boolean; reason: string }> {
+    if (!walletConnected || !userPublicKey) return { allowed: false, reason: 'connect' };
+    if (!arcadeUsername) return { allowed: false, reason: 'username' };
+    // holding enough tokens => always allowed (skip trial check)
+    if (tokenBalance >= MIN_TOKENS_TO_PLAY) return { allowed: true, reason: 'tokens' };
+    // otherwise consult the server-side trial clock (starts it on first play)
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/check_or_start_trial`, {
+            method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_wallet: userPublicKey })
+        });
+        const data = await res.json();
+        const secondsLeft = (data && typeof data.seconds_left === 'number') ? data.seconds_left : 0;
+        if (secondsLeft > 0) return { allowed: true, reason: 'trial:' + secondsLeft };
+        return { allowed: false, reason: 'tokengate' };
+    } catch (e) {
+        // if the trial service is unreachable, fail OPEN for holders only; others blocked
+        return { allowed: false, reason: 'tokengate' };
+    }
+}
+
+async function attemptLaunch(url: string) {
+    const access = await checkAccess();
+    if (access.allowed) { launchGame(url); return; }
+    if (access.reason === 'connect') { showWalletModal(); return; }
+    if (access.reason === 'username') { showUsernameModal(false); return; }
+    showTokenGateModal(); // trial over + under 1000 $2BA
+}
+
+function showTokenGateModal() {
+    if (document.getElementById('arcade-gate-modal')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'arcade-gate-modal';
+    overlay.innerHTML = `
+      <div class="wm-dialog">
+        <h2>\uD83D\uDD12 ARCADE LOCKED</h2>
+        <p class="wm-hint">Your 8-hour free trial has ended. To keep playing every cabinet in
+        the arcade, hold at least <b>${MIN_TOKENS_TO_PLAY.toLocaleString()} $2BA</b> in your
+        connected wallet. Your balance unlocks everything \u2014 you never spend it to play
+        (only revives burn tokens).</p>
+        <p class="wm-hint">Your balance: <b>${Math.floor(tokenBalance).toLocaleString()} $2BA</b></p>
+        <a id="gate-buy" class="wm-btn wm-go" href="#" target="_blank" rel="noopener">GET $2BA</a>
+        <button class="wm-btn" id="gate-refresh">I ADDED TOKENS \u2014 RE-CHECK</button>
+        <button class="wm-cancel" id="gate-close">[ CLOSE ]</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    const buy = document.getElementById('gate-buy') as HTMLAnchorElement;
+    // buy link: pump.fun token page if CA is set, else a placeholder
+    buy.href = (CONTRACT_ADDRESS && CONTRACT_ADDRESS !== 'YOUR_CA_HERE')
+        ? `https://pump.fun/coin/${CONTRACT_ADDRESS}` : '#';
+    document.getElementById('gate-refresh')?.addEventListener('click', async () => {
+        await syncBalance();
+        (document.querySelector('#arcade-gate-modal .wm-hint b') as HTMLElement)?.replaceWith();
+        overlay.remove();
+        // re-evaluate immediately
+        if (tokenBalance >= MIN_TOKENS_TO_PLAY) showToast('Unlocked! ' + Math.floor(tokenBalance).toLocaleString() + ' $2BA \u2014 enjoy the arcade.');
+        else showTokenGateModal();
+    });
+    document.getElementById('gate-close')?.addEventListener('click', () => overlay.remove());
+}
+
+function showToast(msg: string) {
+    document.getElementById('arcade-toast')?.remove();
+    const t = document.createElement('div');
+    t.id = 'arcade-toast'; t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:6%;left:50%;transform:translateX(-50%);background:#111;color:#00ff88;border:2px solid #00ff88;padding:12px 20px;font-family:monospace;font-size:15px;z-index:99999;text-align:center;max-width:80vw;';
+    document.body.appendChild(t); setTimeout(() => t.remove(), 4000);
+}
+
+// ---------- CHAMPION STANDINGS ----------
+async function fetchChampions() {
+    const dailyEl = document.getElementById('champ-daily');
+    const weeklyEl = document.getElementById('champ-weekly');
+    if (!dailyEl || !weeklyEl) return;
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_champion_standings`, { method: 'POST', headers: sbHeaders, body: '{}' });
+        const data = await res.json();
+        renderChampList(dailyEl, data.daily || [], 3);
+        renderChampList(weeklyEl, data.weekly || [], 10);
+    } catch (e) {
+        dailyEl.innerHTML = '<li class="champ-empty">Standings load when play begins.</li>';
+        weeklyEl.innerHTML = '';
+    }
+}
+
+function renderChampList(el: HTMLElement, rows: any[], max: number) {
+    el.innerHTML = '';
+    if (rows.length === 0) { el.innerHTML = '<li class="champ-empty">No runs yet \u2014 be the first.</li>'; return; }
+    const medals = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'];
+    rows.slice(0, max).forEach((r, i) => {
+        const li = document.createElement('li');
+        const badge = i < 3 ? medals[i] : `#${i + 1}`;
+        li.innerHTML = `<span class="champ-pos">${badge}</span><span class="champ-name">${r.player}</span>`;
+        el.appendChild(li);
+    });
+}
 
 // ---------- RATINGS ----------
 async function fetchRatings() {
@@ -270,7 +390,7 @@ function buildCatalog() {
         tile.appendChild(meta);
         const p = document.createElement('p'); p.textContent = g.desc; tile.appendChild(p);
         const play = document.createElement('span'); play.className = 'cat-play'; play.textContent = '\u25B6 PLAY'; tile.appendChild(play);
-        tile.addEventListener('click', () => { if (g.url) launchGame(g.url); });
+        tile.addEventListener('click', () => { if (g.url) attemptLaunch(g.url); });
         grid.appendChild(tile);
     });
 
@@ -306,7 +426,7 @@ function wireInputs() {
         else if (e.key === 'ArrowRight') { e.preventDefault(); rotateBy(1); }
         else if (e.key === 'Enter') {
             const g = FEATURED[susanIndex];
-            if (g.url) launchGame(g.url);
+            if (g.url) attemptLaunch(g.url);
         }
     });
 
@@ -385,6 +505,8 @@ function startPresence() {
 // WALLET (shared with the games via localStorage)
 // ============================================================
 let walletConnected = false, userPublicKey = '', tokenBalance = 0;
+let arcadeUsername = localStorage.getItem('arcadeUsername') || '';
+const MIN_TOKENS_TO_PLAY = window.ARCADE_CONFIG.MIN_TOKENS_TO_PLAY; // required $2BA after free trial
 
 function walletLabel() {
     const btn = document.getElementById('wallet-btn');
@@ -394,6 +516,19 @@ function walletLabel() {
         const watch = localStorage.getItem('watchAddress') === userPublicKey ? '[WATCH] ' : '';
         btn.textContent = `${watch}${short} \u2502 ${Math.floor(tokenBalance).toLocaleString()} $2BA`;
     } else btn.textContent = 'CONNECT WALLET';
+}
+
+async function loadUsername() {
+    arcadeUsername = '';
+    if (!userPublicKey) return;
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_username`, {
+            method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_wallet: userPublicKey })
+        });
+        const name = await res.json();
+        if (typeof name === 'string' && name) { arcadeUsername = name; localStorage.setItem('arcadeUsername', name); }
+        else { localStorage.removeItem('arcadeUsername'); }
+    } catch (e) { /* fall back to WL_ naming */ }
 }
 
 async function syncBalance() {
@@ -449,6 +584,7 @@ function showWalletModal() {
           <div id="wm-err"></div>
           <button class="wm-btn wm-go">CONNECT (READ-ONLY)</button>
         </div>
+        ${walletConnected ? '<button class="wm-username">[ ' + (arcadeUsername ? 'CHANGE USERNAME' : 'SET USERNAME') + ' ]</button>' : ''}
         ${walletConnected ? '<button class="wm-disconnect">[ DISCONNECT ]</button>' : ''}
         <button class="wm-cancel">[ CLOSE ]</button>
       </div>`;
@@ -474,7 +610,9 @@ function showWalletModal() {
             localStorage.setItem('walletType', type);
             localStorage.removeItem('watchAddress');
             await syncBalance();
+            await loadUsername();
             overlay.remove();
+            if (!arcadeUsername) showUsernameModal(false);
         } catch (e) { console.error('Wallet connect rejected', e); }
     }));
 
@@ -487,9 +625,12 @@ function showWalletModal() {
         localStorage.setItem('watchAddress', addr);
         localStorage.removeItem('walletType');
         await syncBalance();
+        await loadUsername();
         overlay.remove();
+        if (!arcadeUsername) showUsernameModal(false);
     });
 
+    overlay.querySelector('.wm-username')?.addEventListener('click', () => { overlay.remove(); showUsernameModal(!!arcadeUsername); });
     overlay.querySelector('.wm-disconnect')?.addEventListener('click', () => {
         walletConnected = false; userPublicKey = ''; tokenBalance = 0;
         localStorage.removeItem('walletType'); localStorage.removeItem('watchAddress');
@@ -501,6 +642,69 @@ function showWalletModal() {
 // ============================================================
 // CONTACT US (logged to Supabase via the submit_feedback RPC)
 // ============================================================
+function showUsernameModal(isEdit: boolean) {
+    if (!walletConnected || !userPublicKey) { showWalletModal(); return; }
+    if (document.getElementById('arcade-username-modal')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'arcade-username-modal';
+    overlay.innerHTML = `
+      <div class="wm-dialog">
+        <h2>${isEdit ? 'CHANGE USERNAME' : 'CHOOSE YOUR USERNAME'}</h2>
+        <p class="wm-hint">This is your name on the leaderboards and champion boards.
+        3-16 characters: letters, numbers, underscore. Must be unique and clean.</p>
+        <input id="un-input" class="ct-field" type="text" placeholder="e.g. AcePilot" maxlength="16"
+          spellcheck="false" autocomplete="off" value="${isEdit ? arcadeUsername : ''}" />
+        <div id="un-msg"></div>
+        <button class="wm-btn wm-go" id="un-save">${isEdit ? 'SAVE' : 'CLAIM USERNAME'}</button>
+        ${isEdit ? '' : '<button class="wm-cancel" id="un-skip">SKIP FOR NOW</button>'}
+        ${isEdit ? '<button class="wm-cancel" id="un-cancel">[ CLOSE ]</button>' : ''}
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const input = document.getElementById('un-input') as HTMLInputElement;
+    const msg = document.getElementById('un-msg')!;
+    input.focus();
+
+    input.addEventListener('input', () => {
+        const v = input.value.trim();
+        if (v.length === 0) { msg.textContent = ''; msg.className = ''; return; }
+        if (!/^[A-Za-z][A-Za-z0-9_]{2,15}$/.test(v)) {
+            msg.textContent = '3-16 chars, start with a letter, letters/numbers/_ only';
+            msg.className = 'un-bad';
+        } else { msg.textContent = 'Looks good \u2014 checking happens on save'; msg.className = 'un-ok'; }
+    });
+
+    const save = document.getElementById('un-save') as HTMLButtonElement;
+    save.addEventListener('click', async () => {
+        const v = input.value.trim();
+        save.disabled = true; save.textContent = 'CHECKING...';
+        try {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/set_username`, {
+                method: 'POST', headers: sbHeaders,
+                body: JSON.stringify({ p_wallet: userPublicKey, p_username: v })
+            });
+            const r = await res.json();
+            if (r && r.ok) {
+                arcadeUsername = r.username;
+                localStorage.setItem('arcadeUsername', r.username);
+                walletLabel();
+                fetchRatings();
+                overlay.remove();
+            } else {
+                msg.textContent = (r && r.error) ? r.error : 'Could not set username.';
+                msg.className = 'un-bad';
+                save.disabled = false; save.textContent = isEdit ? 'SAVE' : 'CLAIM USERNAME';
+            }
+        } catch (e) {
+            msg.textContent = 'Network error. Try again.'; msg.className = 'un-bad';
+            save.disabled = false; save.textContent = isEdit ? 'SAVE' : 'CLAIM USERNAME';
+        }
+    });
+
+    overlay.querySelector('#un-skip')?.addEventListener('click', () => overlay.remove());
+    overlay.querySelector('#un-cancel')?.addEventListener('click', () => overlay.remove());
+}
+
 function showContactModal() {
     if (document.getElementById('arcade-contact-modal')) return;
     const overlay = document.createElement('div');
@@ -591,6 +795,18 @@ function boot() {
         document.getElementById('cat-next')?.addEventListener('click', () => { catalogPage++; buildCatalog(); });
     });
     safe('ratings', fetchRatings);
+    safe('champions', fetchChampions);
+    safe('bounce', () => {
+        let reason = '';
+        try { reason = sessionStorage.getItem('gateBounce') || ''; sessionStorage.removeItem('gateBounce'); } catch (e) {}
+        if (!reason) return;
+        // wait for wallet restore to resolve, then show the right prompt
+        setTimeout(() => {
+            if (reason === 'connect') showWalletModal();
+            else if (reason === 'username') showUsernameModal(false);
+            else showTokenGateModal();
+        }, 800);
+    });
     safe('inputs', wireInputs);
     safe('ca', setupCA);
     safe('stats', startPresence);
@@ -598,10 +814,13 @@ function boot() {
     safe('buttons', () => {
         document.getElementById('play-btn')?.addEventListener('click', () => {
             const g = FEATURED[susanIndex];
-            if (g.url) launchGame(g.url);
+            if (g.url) attemptLaunch(g.url);
         });
         document.getElementById('wallet-btn')?.addEventListener('click', showWalletModal);
         document.getElementById('contact-btn')?.addEventListener('click', showContactModal);
+        document.getElementById('tokenomics-btn')?.addEventListener('click', () => {
+            document.getElementById('tokenomics')?.scrollIntoView({ behavior: 'smooth' });
+        });
     });
     safe('intro', () => {
         if (sessionStorage.getItem('introPlayed')) return; // once per visit, not per navigation

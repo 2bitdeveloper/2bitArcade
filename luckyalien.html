@@ -1,54 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <base href="luckyalien/">
-    <!-- Charset -->
-    <meta charset="UTF-8"/>
-
-    <!-- Google Search Console -->
-    <meta name="google-site-verification" content="HRn7srmOxlVc1jFK9_uLaURsxE4Pk5IXCrGup-orMvQ"/>
-
-    <!-- Description for Google Search -->
-    <meta name="description" content="Lucky Alien, Phaser3.js implementation of Adventure Island inspired RPG platformer">
-
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D0R53GEJZH"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-D0R53GEJZH');
-    </script>
-
-    <!-- Title -->
+    <script src="/arcade-config.js"></script>
+    <script src="/access-guard.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Lucky Alien | 2bitArcade</title>
-
-    <!-- Favicon -->
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon/favicon-16x16.png">
-    <link rel="manifest" href="assets/favicon/site.webmanifest">
-
-    <!-- CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    <base href="luckyalien/" />
+    <style>
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+      /* Phaser injects its canvas into <body>; center it, fill the screen */
+      body { display: flex; align-items: center; justify-content: center; }
+      canvas { max-width: 100vw; max-height: 100vh; display: block; }
+      #arcade-home { position: fixed; top: 8px; left: 8px; z-index: 9999; font-family: monospace;
+        font-size: 16px; color: #888; text-decoration: none; opacity: 0.55; }
+      #arcade-home:hover { color: #ff9900; opacity: 1; }
+    </style>
   </head>
   <body>
-    <!-- Header -->
-    <h1 id="header">Lucky Alien</h1>
+    <a id="arcade-home" href="/index.html" title="Back to 2bitArcade">&#8962; ARCADE</a>
 
-    <!-- World variable -->
-    <script type="text/javascript">
-      const world = {};
-      const header = document.getElementById("header");
-      header.onclick = () => {
-        open("https://user-images.githubusercontent.com/67921602/136305903-429d36f5-169d-4f68-a978-5ebe1ce025a2.mp4");
-      }
-    </script>
+    <!-- world global the game expects (was defined inline in the original page) -->
+    <script type="text/javascript">const world = {};</script>
 
-    <!-- Phaser -->
+    <!-- Phaser (CDN, same version the game targets) -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.16.2/dist/phaser.min.js"></script>
 
-    <!-- World -->
+    <!-- World data -->
     <script src="data/Grassland.js" charset="utf-8"></script>
     <script src="data/Forest.js" charset="utf-8"></script>
     <script src="data/Clouds.js" charset="utf-8"></script>
@@ -62,35 +40,21 @@
     <script src="scenes/SignContent.js" charset="utf-8"></script>
     <script src="scenes/Instructions.js" charset="utf-8"></script>
 
-    <!-- Config -->
+    <!-- Config + main -->
     <script src="config.js" charset="utf-8"></script>
-
-    <!-- Main script -->
     <script src="script.js"></script>
 
-    <!-- Secondary files -->
+    <!-- Secondary -->
     <script src="main/Controls.js" charset="utf-8"></script>
     <script src="main/Animations.js" charset="utf-8"></script>
     <script src="main/Boss.js" charset="utf-8"></script>
 
-    <!-- Main files -->
+    <!-- Main loop -->
     <script src="main/preload.js" charset="utf-8"></script>
     <script src="main/create.js" charset="utf-8"></script>
     <script src="main/update.js" charset="utf-8"></script>
 
-    <!-- Footer -->
-    <footer>
-      <p id="license">
-        1021 - Lucky Alien -
-        <a id="licenseLink" href="https://github.com/thcheetah777/luckyalien/blob/master/LICENSE.md" target="_blank">MIT License</a>
-      </p>
-      <br>
-      <a href="https://github.com/thcheetah777/luckyalien" target="_blank" id="github">
-        <img id="githubLogo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/2048px-Octicons-mark-github.svg.png" alt="GitHub Logo">
-        GitHub
-      </a>
-    </footer>
-    <a href="/index.html" style="position:fixed;top:8px;left:8px;z-index:9999;font-family:monospace;font-size:16px;color:#888;text-decoration:none;opacity:0.6;" onmouseover="this.style.color='#ff9900'" onmouseout="this.style.color='#888'">&#8962; ARCADE</a>
-  <script src="la-bridge.js"></script>
-</body>
+    <!-- 2bitArcade leaderboard bridge -->
+    <script src="la-bridge.js"></script>
+  </body>
 </html>

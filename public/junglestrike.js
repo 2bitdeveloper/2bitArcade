@@ -1,17 +1,16 @@
 // ============================================================
-// SPACEPI <-> 2BITARCADE BRIDGE
-// The instance is exposed as window.sp (one documented edit to the
-// game's boot line). Cumulative score = sum of per-level bests in
-// sp.user.levels[]. We submit whenever that total increases and the
-// player is back at the level menu (i.e. a level just resolved).
+// JUNGLE STRIKE <-> 2BITARCADE BRIDGE
+// Score = points from kills + stage bonuses. One telemetry stamp per
+// 500 points. Game drives run boundaries via onStart / onGameOver.
+// Reads shared config from window.ARCADE_CONFIG.
 // ============================================================
 (function () {
   'use strict';
   var CFG = window.ARCADE_CONFIG || {};
   var SUPABASE_URL = CFG.SUPABASE_URL;
   var SUPABASE_KEY = CFG.SUPABASE_KEY;
-  var BOARD_ID = 'spacepi';
-  var MILESTONE_POINTS = 1000;
+  var BOARD_ID = 'jungle_strike';
+  var MILESTONE = 500;
 
   var sbHeaders = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
   var guestName = 'Guest_' + (Math.floor(Math.random() * 9000) + 1000);
@@ -22,7 +21,6 @@
     if (custom) return custom;
     return walletAddress ? 'WL_' + walletAddress.substring(0, 6) : guestName;
   }
-
   function restoreWalletIdentity() {
     try {
       var watch = localStorage.getItem('watchAddress');
@@ -47,53 +45,37 @@
     fetch(SUPABASE_URL + '/rest/v1/rpc/pilot_heartbeat', { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_session_id: sessionId }) }).catch(function () {});
   }
 
-  // Cumulative best score across all 13 levels
-  function totalScore() {
-    try {
-      var levels = window.sp && window.sp.user && window.sp.user.levels;
-      if (!levels) return 0;
-      var sum = 0;
-      for (var i = 0; i < levels.length; i++) sum += (levels[i].score || 0);
-      return Math.round(sum);
-    } catch (e) { return 0; }
-  }
-
-  // Telemetry is milestone-based on the cumulative total. Because SpacePi
-  // is a progress game (not a single timed run), the "run" is the whole
-  // session; we emit a timestamp each time the total crosses a milestone
-  // and submit the accumulated set after each increase.
-  var telemetry = [], sessionStart = Date.now(), lastMilestone = 0, lastTotal = 0, submitTimer = null;
-
-  function poll() {
-    var total = totalScore();
-    if (total <= lastTotal) return;
-    lastTotal = total;
-    while (total >= lastMilestone + MILESTONE_POINTS) {
-      lastMilestone += MILESTONE_POINTS;
-      var t = Date.now() - sessionStart;
+  var telemetry = [], runStart = 0, lastMilestone = 0, submitted = false;
+  function resetRun() { telemetry = []; runStart = Date.now(); lastMilestone = 0; submitted = false; }
+  function tick() {
+    if (runStart === 0 || !window.JungleStrike) return;
+    var sc = window.JungleStrike.getScore();
+    while (sc >= lastMilestone + MILESTONE) {
+      lastMilestone += MILESTONE;
+      var t = Date.now() - runStart;
       var prev = telemetry.length ? telemetry[telemetry.length - 1] : -1;
       telemetry.push(t <= prev ? prev + 1 : t);
     }
-    // debounce submission so rapid level-end score ticks send once
-    if (submitTimer) clearTimeout(submitTimer);
-    submitTimer = setTimeout(submitRun, 1500);
   }
-
   function submitRun() {
-    if (telemetry.length === 0) return;
+    tick();
+    if (submitted || telemetry.length === 0) return;
+    submitted = true;
     fetch(SUPABASE_URL + '/functions/v1/validate-score', {
       method: 'POST', headers: sbHeaders,
       body: JSON.stringify({ board_id: BOARD_ID, player_name: playerName(), telemetry: telemetry })
     }).catch(function () {});
   }
 
-  function boot() {
-    restoreWalletIdentity();
-    heartbeat();
-    setInterval(heartbeat, 45000);
-    setInterval(poll, 500);
-    window.addEventListener('beforeunload', submitRun);
-    console.log('[SPACEPI] 2bitArcade bridge armed. Board: ' + BOARD_ID);
-  }
-  boot();
+  window.JungleStrikeBridge = {
+    onStart: function () { resetRun(); },
+    onGameOver: function () { submitRun(); }
+  };
+
+  restoreWalletIdentity();
+  heartbeat();
+  setInterval(heartbeat, 45000);
+  setInterval(tick, 250);
+  window.addEventListener('beforeunload', submitRun);
+  console.log('[JUNGLE STRIKE] 2bitArcade bridge armed. Board: ' + BOARD_ID);
 })();

@@ -46,23 +46,23 @@ export class GameView {
     // ==========================================
     // --- WEB3, BURN & TOKENIZATION CONFIG ---
     // ==========================================
-    public isDevMode: boolean = false; // SET TO FALSE FOR PRODUCTION
+    public isDevMode: boolean = true; // SET TO FALSE FOR PRODUCTION
     
     // --> ADD YOUR LAUNCH ADDRESSES HERE <--
-    public readonly CONTRACT_ADDRESS = "YOUR_CA_HERE";
-    public readonly TARGET_TOKEN_MINT = "YOUR_TOKEN_MINT_ADDRESS_HERE";
+    public readonly CONTRACT_ADDRESS = window.ARCADE_CONFIG.CONTRACT_ADDRESS;
+    public readonly TARGET_TOKEN_MINT = window.ARCADE_CONFIG.TOKEN_MINT;
     public readonly BURN_WALLET_ADDRESS = "11111111111111111111111111111111"; // Standard Solana Incinerator
     
     // RPC endpoint used for all on-chain reads/writes.
     // NOTE: The public mainnet endpoint is heavily rate-limited and often rejects
     // sendTransaction. For production, use a Helius/QuickNode/Triton endpoint.
-    public readonly SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com";
+    public readonly SOLANA_RPC_URL = window.ARCADE_CONFIG.SOLANA_RPC_URL;
     
     public walletConnected: boolean = false;
     public userPublicKey: string = "";
     public watchOnlyMode: boolean = false; // true when connected via pasted address (pump.fun wallet) - no signing possible
     public tokenBalance: number = 0;
-    public readonly REVIVE_COST = 1000; 
+    public readonly REVIVE_COST = window.ARCADE_CONFIG.REVIVE_COST; 
     
     public rewardUnlockUntil: number = 0; // epoch ms; nonzero while this pilot holds an active leaderboard reward
 
@@ -73,7 +73,7 @@ export class GameView {
 
     // --- LIVE GLOBAL STATS ---
     // pump.fun standard launch supply. "Burned" = INITIAL - live on-chain supply.
-    public readonly INITIAL_TOKEN_SUPPLY = 1000000000;
+    public readonly INITIAL_TOKEN_SUPPLY = window.ARCADE_CONFIG.INITIAL_TOKEN_SUPPLY;
     private presenceSessionId: string =
         (typeof crypto !== 'undefined' && (crypto as any).randomUUID)
             ? (crypto as any).randomUUID()
@@ -123,8 +123,8 @@ export class GameView {
     private lastGamepadState: boolean[] = [];
 
     // --- SECURE TELEMETRY & SUPABASE ARCHITECTURE ---
-    private supabaseUrl = 'https://drawbbapvytjytvbedtl.supabase.co';
-    private supabaseKey = 'sb_publishable_zzdZsO1BCunEfdGwur6M4g_nUjW5pa2';
+    private supabaseUrl = window.ARCADE_CONFIG.SUPABASE_URL;
+    private supabaseKey = window.ARCADE_CONFIG.SUPABASE_KEY;
     private sessionPlayerName = `Guest_${Math.floor(Math.random() * 9000) + 1000}`;
     private boardIds = ["easy_laser", "easy_blade", "easy_missile", "medium_laser", "medium_blade", "medium_missile", "hard_laser", "hard_blade", "hard_missile"];
     
@@ -177,6 +177,7 @@ export class GameView {
     // The single source of truth for this player's leaderboard identity.
     // Score submission and reward lookup MUST use the same name.
     private get leaderboardPlayerName(): string {
+        try { const u = (typeof localStorage !== 'undefined') ? localStorage.getItem('arcadeUsername') : ''; if (u) return u; } catch (e) {}
         return this.walletConnected && this.userPublicKey ? `WL_${this.userPublicKey.substring(0, 6)}` : this.sessionPlayerName;
     }
 
@@ -281,54 +282,8 @@ export class GameView {
         } catch (e) { /* RPC not deployed yet or network failure - unlocks fall back to token balance */ }
     }
 
-    private async fetchActivePilots() {
-        try {
-            const res = await fetch(`${this.supabaseUrl}/rest/v1/rpc/get_active_pilots`, {
-                method: 'POST',
-                headers: { 'apikey': this.supabaseKey, 'Authorization': `Bearer ${this.supabaseKey}`, 'Content-Type': 'application/json' },
-                body: '{}'
-            });
-            const count = await res.json();
-            if (typeof count === 'number') {
-                this.activePilotsStr = `${count.toLocaleString()} Active Pilot${count === 1 ? '' : 's'}`;
-                return;
-            }
-            throw new Error('Unexpected response');
-        } catch (e) {
-            // RPC not deployed yet, or network failure
-            if (this.isDevMode) { this.activePilotsStr = `1 Active Pilot (dev)`; }
-            else { this.activePilotsStr = `-- Active Pilots`; }
-        }
-    }
 
-    private async fetchTokensBurned() {
-        try {
-            const res = await fetch(this.SOLANA_RPC_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTokenSupply', params: [this.TARGET_TOKEN_MINT] })
-            });
-            const data = await res.json();
-            const supply = data.result?.value?.uiAmount;
-            if (typeof supply === 'number') {
-                const burned = Math.max(0, this.INITIAL_TOKEN_SUPPLY - supply);
-                this.tokensBurnedStr = `${this.formatCompact(burned)} Tokens Burned`;
-                return;
-            }
-            throw new Error(data.error?.message || 'Invalid mint');
-        } catch (e) {
-            // Placeholder mint (dev), rate-limited RPC, or network failure
-            if (this.isDevMode) { this.tokensBurnedStr = `0 Tokens Burned (dev)`; }
-            else { this.tokensBurnedStr = `-- Tokens Burned`; }
-        }
-    }
 
-    private formatCompact(n: number): string {
-        if (n >= 1000000000) return (n / 1000000000).toFixed(2).replace(/\.?0+$/, '') + 'B';
-        if (n >= 1000000) return (n / 1000000).toFixed(2).replace(/\.?0+$/, '') + 'M';
-        if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.?0+$/, '') + 'K';
-        return Math.floor(n).toString();
-    }
 
     // Registers this session as "online" and keeps both stats fresh.
     private startPresenceHeartbeat() {

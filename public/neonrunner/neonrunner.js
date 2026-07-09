@@ -25,6 +25,7 @@
   // --- state ---
   var STATE = { MENU: 0, PLAY: 1, OVER: 2 };
   var state = STATE.MENU;
+  var reviveUsedThisRun = false, reviving = false;
   var score = 0, best = 0, speed = 0, baseSpeed = 6, spawnTimer = 0, frame = 0;
   var obstacles = [], particles = [], buildings = [], stars = [];
 
@@ -80,8 +81,36 @@
     score = 0; speed = baseSpeed; spawnTimer = 40; frame = 0;
     obstacles = []; particles = [];
     robot.y = GROUND_Y; robot.vy = 0; robot.onGround = true; robot.ducking = false;
+    reviveUsedThisRun = false; reviving = false;
     if (window.NeonRunnerBridge) window.NeonRunnerBridge.onStart();
   }
+  function performRevive() {
+    // clear the immediate field so the player doesn't instantly re-crash
+    obstacles = obstacles.filter(function (o) { return o.x > robot.x + 260; });
+    robot.y = GROUND_Y; robot.vy = 0; robot.onGround = true; robot.ducking = false;
+    state = STATE.PLAY;
+  }
+  function tryRevive() {
+    if (reviveUsedThisRun || reviving || state !== STATE.OVER) return;
+    if (!window.NeonRunnerBurn) return; // burn helper not present
+    reviving = true;
+    window.NeonRunnerBurn(function (ok) {
+      reviving = false;
+      if (ok) { reviveUsedThisRun = true; performRevive(); }
+    });
+  }
+  // R key or tapping the revive prompt triggers a burn-revive
+  window.addEventListener('keydown', function (e) {
+    if (e.code === 'KeyR') { e.preventDefault(); tryRevive(); }
+  });
+  canvas.addEventListener('pointerdown', function (e) {
+    if (state !== STATE.OVER) return;
+    var r = canvas.getBoundingClientRect();
+    var ly = (e.clientY - r.top) / r.height;
+    // bottom third of the over screen = revive button zone
+    if (ly > 0.62 && ly < 0.82) tryRevive();
+  });
+
   function gameOver() {
     state = STATE.OVER; overAt = Date.now();
     if (Math.floor(score) > best) best = Math.floor(score);
@@ -282,6 +311,14 @@
     ctx.fillStyle = C.cyan; ctx.font = "22px 'VT323', monospace";
     if (Date.now() - overAt > 600 && Math.floor(frame / 30) % 2 === 0)
       ctx.fillText('SPACE TO RUN AGAIN', W / 2, H / 2 + 54);
+    // burn-revive prompt (only when available and unused this run)
+    if (window.NeonRunnerBurn && !reviveUsedThisRun) {
+      ctx.fillStyle = reviving ? '#888' : C.neon;
+      ctx.shadowColor = C.neonHot; ctx.shadowBlur = reviving ? 0 : 10;
+      ctx.font = "24px 'VT323', monospace";
+      ctx.fillText(reviving ? 'BURNING...' : 'REVIVE  \uD83D\uDD25 1000 $2BA  [R / TAP]', W / 2, H / 2 + 92);
+      ctx.shadowBlur = 0;
+    }
     ctx.textAlign = 'left';
   }
   function dim() { ctx.fillStyle = 'rgba(5,2,15,0.7)'; ctx.fillRect(0, 0, W, H); }

@@ -1,0 +1,35 @@
+2bitArcade
+Copyright (c) 2026 2bit Developer (A. Ansari). All rights reserved.
+
+================================================================
+ORIGINAL WORKS — ALL RIGHTS RESERVED
+================================================================
+The following games and all their code and assets are the original,
+proprietary work of 2bit Developer and are protected by copyright:
+
+  - JumpFighter
+  - Origami Ascent
+  - Neon Runner
+  - Sunset Drift
+  - Jungle Strike
+  - The 2bitArcade site itself (landing page, arcade shell, backend
+    functions, and integration/bridge code)
+
+These may NOT be copied, hosted, mirrored, redistributed, sublicensed,
+sold, or used to create derivative works, in whole or in part, on any
+site or platform, WITHOUT PRIOR WRITTEN PERMISSION from 2bit Developer.
+
+Viewing the source for transparency and verification (the code is public
+so players can audit what runs) does NOT grant any license to reuse it.
+If you want to host or build on any of these works, contact us first via
+the CONTACT US form on the arcade.
+
+================================================================
+THIRD-PARTY GAMES
+================================================================
+Some cabinets in the arcade are third-party games used under their own
+open-source licenses (MIT, etc.). Those games remain under their original
+licenses and copyrights — see LICENSES.md for the full per-game record.
+The reservation of rights above applies ONLY to 2bit Developer's own
+works, not to third-party games, which you should obtain from their
+original authors under their own terms.

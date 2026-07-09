@@ -7,15 +7,21 @@
 // ============================================================
 (function () {
   'use strict';
-  var SUPABASE_URL = 'https://drawbbapvytjytvbedtl.supabase.co';
-  var SUPABASE_KEY = 'sb_publishable_zzdZsO1BCunEfdGwur6M4g_nUjW5pa2';
+  var CFG = window.ARCADE_CONFIG || {};
+  var SUPABASE_URL = CFG.SUPABASE_URL;
+  var SUPABASE_KEY = CFG.SUPABASE_KEY;
   var BOARD_ID = 'bullethell';
   var MILESTONE_POINTS = 250;
 
   var sbHeaders = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
   var guestName = 'Guest_' + (Math.floor(Math.random() * 9000) + 1000);
   var walletAddress = '';
-  function playerName() { return walletAddress ? 'WL_' + walletAddress.substring(0, 6) : guestName; }
+  function playerName() {
+    var custom = '';
+    try { custom = localStorage.getItem('arcadeUsername') || ''; } catch (e) {}
+    if (custom) return custom;
+    return walletAddress ? 'WL_' + walletAddress.substring(0, 6) : guestName;
+  }
 
   function restoreWalletIdentity() {
     try {
@@ -66,18 +72,71 @@
     fetch(SUPABASE_URL + '/functions/v1/validate-score', { method: 'POST', headers: sbHeaders, body: payload }).catch(function () {});
   }
 
+  // ----- BURN REVIVE -----
+  var reviveUsedThisRun = false, revivePending = false, reviving = false;
+
+  function showRevivePrompt(onResolve) {
+    if (document.getElementById('bh-revive')) return;
+    var d = document.createElement('div');
+    d.id = 'bh-revive';
+    d.style.cssText = 'position:fixed;inset:0;z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,2,15,0.82);font-family:monospace;';
+    d.innerHTML =
+      '<div style="color:#ff3355;font-size:34px;letter-spacing:2px;margin-bottom:6px;">YOU DIED</div>' +
+      '<button id="bh-revive-btn" style="font-family:monospace;font-size:22px;padding:12px 26px;margin:10px;cursor:pointer;color:#000;background:#ff9900;border:none;box-shadow:0 0 18px #ff5500;">REVIVE \uD83D\uDD25 1000 $2BA</button>' +
+      '<button id="bh-skip-btn" style="font-family:monospace;font-size:18px;padding:8px 20px;cursor:pointer;color:#aaa;background:transparent;border:2px solid #555;">RESTART LEVEL</button>' +
+      '<div style="color:#666;font-size:14px;margin-top:10px;">Burning revives you in place with full health and keeps your score.</div>';
+    document.body.appendChild(d);
+    document.getElementById('bh-skip-btn').onclick = function () { d.remove(); onResolve(false); };
+    document.getElementById('bh-revive-btn').onclick = function () {
+      if (reviving) return;
+      if (!window.BulletHellBurn) { d.remove(); onResolve(false); return; }
+      reviving = true;
+      document.getElementById('bh-revive-btn').textContent = 'BURNING...';
+      window.BulletHellBurn(function (ok) {
+        reviving = false;
+        if (ok) { d.remove(); onResolve(true); }
+        else { document.getElementById('bh-revive-btn').textContent = 'REVIVE \uD83D\uDD25 1000 $2BA'; }
+      });
+    };
+  }
+
   function hook() {
     // resetGame is a top-level function in main.js
     if (typeof window.resetGame !== 'function' || typeof window.reloadLevel !== 'function') { setTimeout(hook, 120); return; }
 
     var origReset = window.resetGame;
-    window.resetGame = function () { var r = origReset.apply(this, arguments); resetRun(); return r; };
+    window.resetGame = function () { var r = origReset.apply(this, arguments); resetRun(); reviveUsedThisRun = false; return r; };
 
-    // Death reverts to checkpoint via reloadLevel(); submit the run's peak there.
-    // (Called on every death AND on manual restart, which is the correct moment
-    //  to bank a run's best score since there is no explicit game-over.)
+    // Death reverts to checkpoint via reloadLevel(). Offer a burn-revive first:
+    // if the player burns, restore full HP in place and DON'T reload (score kept).
     var origReload = window.reloadLevel;
-    window.reloadLevel = function () { submitRun(); return origReload.apply(this, arguments); };
+    window.reloadLevel = function () {
+      var self = this, args = arguments;
+      // Only intercept for player death (pl.dead), when revive is available & unused
+      if (window.pl && window.pl.dead && window.BulletHellBurn && !reviveUsedThisRun && !revivePending) {
+        revivePending = true;
+        showRevivePrompt(function (revived) {
+          revivePending = false;
+          if (revived) {
+            reviveUsedThisRun = true;
+            // resurrect in place: clear bullets, restore hp, keep score & level
+            try {
+              window.pl.dead = false;
+              window.pl.hp = window.pl.maxHp;
+              if (typeof clearEntities === 'function') { /* keep level, just clear hazards */ }
+              if (window.bullets) window.bullets.length = 0;
+              if (window.enemyBullets) window.enemyBullets.length = 0;
+            } catch (e) {}
+          } else {
+            submitRun();
+            origReload.apply(self, args); // normal restart
+          }
+        });
+        return; // defer the reload until the prompt resolves
+      }
+      submitRun();
+      return origReload.apply(self, args);
+    };
 
     resetRun();
     setInterval(poll, 150);

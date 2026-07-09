@@ -24,6 +24,9 @@
   var walletAddress = '';
 
   function playerName() {
+    var custom = '';
+    try { custom = localStorage.getItem('arcadeUsername') || ''; } catch (e) {}
+    if (custom) return custom;
     return walletAddress ? 'WL_' + walletAddress.substring(0, 6) : guestName;
   }
 
@@ -154,9 +157,10 @@
   // ============================================================
   // TOKEN-BURN REVIVE  (injected via the game\'s own $.Button API)
   // ============================================================
-  var REVIVE_COST = 1000;          // $2BA burned per revive
-  var TARGET_TOKEN_MINT = 'YOUR_TOKEN_MINT_ADDRESS_HERE';
-  var SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
+  var CFG = window.ARCADE_CONFIG || {};
+  var REVIVE_COST = CFG.REVIVE_COST;
+  var TARGET_TOKEN_MINT = CFG.TOKEN_MINT;
+  var SOLANA_RPC_URL = CFG.SOLANA_RPC_URL;
   var reviveUsedThisRun = false;
   var burnInProgress = false;
 

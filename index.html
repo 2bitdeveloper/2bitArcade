@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script src="./arcade-config.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>2bitArcade | Play. Hold. Burn.</title>
@@ -17,6 +18,7 @@
           <div class="stat-chip" id="stat-pilots">&#9679; Syncing players...</div>
           <div class="stat-chip" id="stat-burned">&#128293; Syncing burn...</div>
           <button id="wallet-btn">CONNECT WALLET</button>
+          <button id="tokenomics-btn">TOKENOMICS</button>
           <button id="contact-btn">CONTACT US</button>
         </div>
       </header>
@@ -54,14 +56,42 @@
           <span id="ca-chip" title="Tap to copy">CA: <b id="ca-text"></b> &#128203;</span>
         </section>
 
+        <!-- CURRENT CHAMPIONS -->
+        <section id="champions">
+          <h2>CURRENT CHAMPIONS</h2>
+          <div id="champ-cols">
+            <div class="champ-col">
+              <h3>&#9733; TODAY'S TOP 3</h3>
+              <ol id="champ-daily"><li class="champ-empty">Loading...</li></ol>
+              <p class="champ-note">24-hour full unlock</p>
+            </div>
+            <div class="champ-col">
+              <h3>&#9733; THIS WEEK'S TOP 10</h3>
+              <ol id="champ-weekly"><li class="champ-empty">Loading...</li></ol>
+              <p class="champ-note">72-hour full unlock</p>
+            </div>
+          </div>
+        </section>
+
         <!-- TOKENOMICS -->
         <section id="tokenomics">
           <h2>$2BA TOKENOMICS</h2>
 
+          <div class="tok-block tok-access">
+            <h3>&#128273; HOW ACCESS WORKS</h3>
+            <p>Every wallet gets <b>8 hours of free play</b> across the whole arcade, starting
+            the first time you launch a game &mdash; no tokens needed to try it out. After that
+            free window ends, keeping access is simple: <b>hold at least 1,000 $2BA</b> in your
+            connected wallet and the entire arcade stays unlocked. You never spend that balance to
+            play &mdash; simply holding it is your key. (Reviving mid-run is the only thing that
+            burns tokens; see below.) Fall below 1,000 $2BA after your trial and the cabinets lock
+            until you top back up.</p>
+          </div>
+
           <div class="tok-block">
             <h3>FIXED SUPPLY. FOREVER.</h3>
             <p>1,000,000,000 $2BA minted at launch &mdash; and that is the most that will ever
-            exist. There is no mint authority to print more. 2% (20,000,000) is reserved for the
+            exist. There is no mint authority to print more. 2.5% (25,000,000) is reserved for the
             developer; everything else lives on the open market.</p>
           </div>
 

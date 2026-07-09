@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <script src="./arcade-config.js"></script>
+    <script src="./access-guard.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Sunset Drift | 2bitArcade</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+        background: #14081e; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; font-family: 'VT323', monospace; }
+      #title { color: #ffde59; font-size: 34px; letter-spacing: 5px; margin: 0 0 8px;
+        text-shadow: 0 0 14px #ff6a00; }
+      #game { border: 2px solid #ffde59; box-shadow: 0 0 30px rgba(255,150,0,0.35);
+        background: #14081e; width: 100vw; height: 100vh; display: block; image-rendering: auto; touch-action: none; }
+      #hint { color: #999; font-size: 18px; margin-top: 8px; }
+      #arcade-home { position: fixed; top: 8px; left: 8px; z-index: 500; font-family: 'VT323', monospace;
+        font-size: 20px; color: #888; text-decoration: none; opacity: .6; }
+      #arcade-home:hover { color: #ffde59; opacity: 1; }
+    </style>
+</head>
+<body>
+    <a id="arcade-home" href="./index.html" title="Back to 2bitArcade">&#8962; ARCADE</a>
+    <h1 id="title" style="display:none">SUNSET DRIFT</h1>
+    <canvas id="game" width="900" height="560"></canvas>
+    <p id="hint" style="display:none">&#8593;/W accelerate &bull; &#8595;/S brake &bull; &#8592; &#8594; steer &bull; dodge traffic, chase distance</p>
+
+    <script src="sunsetdrift/sound.js"></script>
+    <script src="sunsetdrift/sunsetdrift.js"></script>
+    <script src="sunsetdrift/sd-bridge.js"></script>
+</body>
+</html>

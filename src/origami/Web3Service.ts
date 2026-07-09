@@ -7,10 +7,10 @@
 
 export class Web3Service {
     // --- SHARED ARCADE CONFIG (keep in sync with the landing page & JF) ---
-    public static readonly TARGET_TOKEN_MINT = "YOUR_TOKEN_MINT_ADDRESS_HERE";
-    public static readonly SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com";
-    private static readonly SUPABASE_URL = "https://drawbbapvytjytvbedtl.supabase.co";
-    private static readonly SUPABASE_KEY = "sb_publishable_zzdZsO1BCunEfdGwur6M4g_nUjW5pa2";
+    public static readonly TARGET_TOKEN_MINT = window.ARCADE_CONFIG.TOKEN_MINT;
+    public static readonly SOLANA_RPC_URL = window.ARCADE_CONFIG.SOLANA_RPC_URL;
+    private static readonly SUPABASE_URL = window.ARCADE_CONFIG.SUPABASE_URL;
+    private static readonly SUPABASE_KEY = window.ARCADE_CONFIG.SUPABASE_KEY;
     private static readonly BOARD_ID = "origami_ascent";
 
     // Guardian unlock ladder: crane is free, the rest gate on $2BA holdings.
@@ -23,7 +23,7 @@ export class Web3Service {
     public static userPublicKey = "";
     public static tokenBalance = 0;
     public static rewardUnlockUntil = 0; // epoch ms (daily/weekly champion reward)
-    public static readonly REVIVE_COST = 1000; // $2BA burned per revive (matches Jump Fighter)
+    public static readonly REVIVE_COST = window.ARCADE_CONFIG.REVIVE_COST;
     public static readonly DEV_MODE = false;   // true = simulate burns for local testing
     private static burnInProgress = false;
 
@@ -34,6 +34,7 @@ export class Web3Service {
             : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     private static get playerName(): string {
+        try { const u = localStorage.getItem('arcadeUsername'); if (u) return u; } catch (e) {}
         return this.walletConnected && this.userPublicKey
             ? `WL_${this.userPublicKey.substring(0, 6)}`
             : this.sessionPlayerName;

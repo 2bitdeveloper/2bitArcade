@@ -1,3 +1,14 @@
+# 2bitArcade - Licenses
+
+## IMPORTANT: 2bit Developer's own games are NOT open source
+JumpFighter, Origami Ascent, Neon Runner, and the 2bitArcade site itself
+are copyrighted, all-rights-reserved works. They may not be hosted or
+reused without written permission. See the LICENSE file. The source is
+public for transparency/verification only. The MIT/permissive terms below
+apply ONLY to the third-party games listed.
+
+---
+
 # 2bitArcade - Third-Party Licenses
 
 ## Radius Raid
@@ -32,9 +43,32 @@
   credits) were REMOVED and replaced with original music. A bridge
   script adds leaderboard submission. Game logic otherwise unmodified.
 
+## Jungle Strike
+- Original work by 2bit Developer (created for 2bitArcade).
+- All code and art original (canvas-drawn run-and-gun); no third-party
+  assets. An original game in the run-and-gun genre (not affiliated with
+  or derived from any existing franchise). VT323 font via Google Fonts (OFL).
+
+## Sunset Drift
+- Original work by 2bit Developer (created for 2bitArcade).
+- All code and art original (canvas-drawn pseudo-3D racer); no third-party
+  game assets. VT323 font via Google Fonts (OFL).
+
 ## Neon Runner
 - Original work by 2bit Developer (created for 2bitArcade).
 - All code and art original (canvas-drawn); no third-party game assets.
+
+## Neon Night Racer
+- Base engine: Arshiamk (https://github.com/Arshiamk/neon-night-racer), MIT
+  (full text at public/neonracer/LICENSE).
+- Modifications by 2bit Developer: the original was a driving demo with no
+  fail state. Added an original traffic/collision/lives system
+  (public/neonracer/js/traffic.js) - AI vehicles, 3 lives, off-road and
+  vehicle collisions, and distance-scaled difficulty - plus small hooks in
+  game.js (instantiate/reset/update/render the traffic system, restart after
+  wreck) and the window.game export. The new traffic.js and gameplay logic
+  are original 2bit Developer work; the underlying pseudo-3D road engine
+  remains Arshiamk's under MIT.
 
 ## Origami Ascent / JumpFighter
 - Original works by 2bit Developer.

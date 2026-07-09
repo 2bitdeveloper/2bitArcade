@@ -29,7 +29,27 @@ body, html {
   font-size: clamp(52px, 9vw, 96px); margin: 0; letter-spacing: 6px; color: #fff;
   text-shadow: 0 0 12px var(--neon), 0 0 40px var(--neon-hot);
 }
-#arcade-title span { color: var(--neon); }
+/* "2BIT" glows steady; "ARCADE" flickers like a dying neon tube on a loop */
+#arcade-title span {
+  color: var(--neon);
+  animation: neon-flicker 4s infinite steps(1);
+}
+@keyframes neon-flicker {
+  /* mostly lit, with quick stutters + one longer dropout - classic broken sign */
+  0%, 18%   { opacity: 1;   text-shadow: 0 0 12px var(--neon), 0 0 40px var(--neon-hot); }
+  19%, 21%  { opacity: 0.2; text-shadow: none; }
+  22%, 40%  { opacity: 1;   text-shadow: 0 0 12px var(--neon), 0 0 40px var(--neon-hot); }
+  41%, 42%  { opacity: 0.3; text-shadow: none; }
+  43%, 62%  { opacity: 1;   text-shadow: 0 0 12px var(--neon), 0 0 40px var(--neon-hot); }
+  63%, 66%  { opacity: 0.15; text-shadow: none; }        /* the long dropout */
+  67%, 68%  { opacity: 1;   text-shadow: 0 0 18px var(--neon), 0 0 50px var(--neon-hot); }
+  69%, 70%  { opacity: 0.3; text-shadow: none; }
+  71%, 100% { opacity: 1;   text-shadow: 0 0 12px var(--neon), 0 0 40px var(--neon-hot); }
+}
+/* respect users who don't want motion */
+@media (prefers-reduced-motion: reduce) {
+  #arcade-title span { animation: none; }
+}
 
 #stats-bar { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
 .stat-chip {
@@ -48,6 +68,13 @@ body, html {
   text-shadow: 0 0 10px var(--neon); transition: all 0.15s ease;
 }
 #contact-btn:hover { background: var(--neon); color: #000; box-shadow: 0 0 18px var(--neon); }
+#tokenomics-btn {
+  font-family: 'VT323', monospace; font-size: 22px; padding: 8px 20px; cursor: pointer;
+  color: #ffcc33; background: rgba(40, 32, 0, 0.6); border: 2px solid #ffcc33;
+  text-shadow: 0 0 10px #ffcc33; transition: all 0.15s ease;
+}
+#tokenomics-btn:hover { background: #ffcc33; color: #000; box-shadow: 0 0 18px #ffcc33; }
+#arcade-gate-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 99999; display: flex; align-items: center; justify-content: center; font-family: 'VT323', monospace; }
 
 /* ---------- LAZY SUSAN ---------- */
 #selector { display: flex; align-items: center; justify-content: center; gap: 36px; margin-top: 30px; }
@@ -105,6 +132,19 @@ body, html {
   animation: pulse 1.6s infinite;
 }
 @keyframes pulse { 0%,100% { box-shadow: 0 0 14px var(--neon-hot); } 50% { box-shadow: 0 0 34px var(--neon); } }
+
+/* ---------- CHAMPIONS ---------- */
+#champions { margin-top: 56px; }
+#champions h2 { text-align: center; font-size: 42px; letter-spacing: 5px; color: #fff; text-shadow: 0 0 16px var(--neon); margin-bottom: 22px; }
+#champ-cols { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; }
+.champ-col { flex: 1; min-width: 260px; max-width: 380px; background: rgba(10,5,25,0.8); border: 2px solid #4a3200; padding: 16px 20px; }
+.champ-col h3 { margin: 0 0 12px; font-size: 24px; color: #ffcc33; letter-spacing: 1px; text-align: center; text-shadow: 0 0 10px #ffaa00; }
+.champ-col ol { list-style: none; padding: 0; margin: 0; }
+.champ-col li { display: flex; align-items: center; gap: 12px; padding: 6px 4px; font-size: 21px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.champ-pos { min-width: 34px; text-align: center; color: var(--cyan); font-weight: bold; }
+.champ-name { color: #eee; }
+.champ-empty { color: #777; font-size: 18px; justify-content: center; }
+.champ-note { text-align: center; color: #888; font-size: 16px; margin: 12px 0 0; }
 
 /* ---------- FULL CATALOG ---------- */
 #catalog { margin-top: 50px; }
@@ -175,12 +215,14 @@ body, html {
 .tok-block h3 { margin: 0 0 8px; font-size: 28px; color: var(--cyan); letter-spacing: 2px; text-shadow: 0 0 10px var(--cyan); }
 .tok-block p { margin: 0; font-size: 22px; line-height: 1.4; color: #ddd; }
 .tok-block b { color: var(--neon); }
+.tok-access { border: 2px solid #ffcc33; background: rgba(40, 32, 0, 0.35); }
+.tok-access h3 { color: #ffcc33; text-shadow: 0 0 10px #ffaa00; }
 
 /* ---------- FOOTER ---------- */
 #arcade-footer { text-align: center; margin-top: 50px; font-size: 20px; color: #888; }
 
 /* ---------- WALLET + CONTACT MODALS ---------- */
-#arcade-wallet-modal, #arcade-contact-modal {
+#arcade-wallet-modal, #arcade-contact-modal, #arcade-username-modal {
   position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 99999;
   display: flex; justify-content: center; align-items: center; font-family: 'VT323', monospace;
 }
@@ -215,6 +257,10 @@ body, html {
   border: 2px solid var(--cyan); outline: none; resize: vertical;
 }
 #ct-err { color: #ff5555; font-size: 18px; min-height: 22px; margin: 6px 0; }
+#un-msg { min-height: 22px; font-size: 17px; margin: 4px 0 8px; }
+#un-msg.un-ok { color: #00ff88; }
+#un-msg.un-bad { color: #ff5555; }
+.wm-username { background: none; border: none; font-family: 'VT323', monospace; font-size: 20px; margin-top: 10px; cursor: pointer; color: #00e6ff; display: block; width: 100%; }
 .wm-cancel, .wm-disconnect {
   background: none; border: none; font-size: 22px; margin-top: 14px; cursor: pointer;
   font-family: 'VT323', monospace; display: block; width: 100%;

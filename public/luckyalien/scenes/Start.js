@@ -91,7 +91,7 @@ class Start extends Phaser.Scene {
       fontSize: 60,
       color: "#d1d1d1"
     });
-    game.githubOption = this.add.text(630, 441.5, "GitHub", {
+    game.githubOption = this.add.text(630, 441.5, "", {
       fontFamily: "kenneyPixel",
       fontSize: 60,
       color: "#d1d1d1"
@@ -183,7 +183,7 @@ class Start extends Phaser.Scene {
     if (game.chooseCursor.selection === "github") {
       game.githubOption.setColor("#fff");
       if (Phaser.Input.Keyboard.JustDown(RIGHT)) {
-        open("https://github.com/thcheetah777/luckyalien");
+        /* external GitHub link removed for 2bitArcade */
       }
     } else {
       game.githubOption.setColor("#d1d1d1");

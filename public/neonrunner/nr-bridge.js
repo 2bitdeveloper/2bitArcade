@@ -5,15 +5,21 @@
 // ============================================================
 (function () {
   'use strict';
-  var SUPABASE_URL = 'https://drawbbapvytjytvbedtl.supabase.co';
-  var SUPABASE_KEY = 'sb_publishable_zzdZsO1BCunEfdGwur6M4g_nUjW5pa2';
+  var CFG = window.ARCADE_CONFIG || {};
+  var SUPABASE_URL = CFG.SUPABASE_URL;
+  var SUPABASE_KEY = CFG.SUPABASE_KEY;
   var BOARD_ID = 'neon_runner';
   var MILESTONE = 100;
 
   var sbHeaders = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
   var guestName = 'Guest_' + (Math.floor(Math.random() * 9000) + 1000);
   var walletAddress = '';
-  function playerName() { return walletAddress ? 'WL_' + walletAddress.substring(0, 6) : guestName; }
+  function playerName() {
+    var custom = '';
+    try { custom = localStorage.getItem('arcadeUsername') || ''; } catch (e) {}
+    if (custom) return custom;
+    return walletAddress ? 'WL_' + walletAddress.substring(0, 6) : guestName;
+  }
 
   function restoreWalletIdentity() {
     try {
