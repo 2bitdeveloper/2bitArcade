@@ -24,7 +24,7 @@ window.ARCADE_CONFIG = {
   // (Phantom/Solflare/Backpack). Watch-mode entry of these addresses does NOT
   // bypass, so strangers reading this file can't ride your dev wallet.
   // !!! EMPTY THIS LIST BEFORE LAUNCH !!!
-  DEV_WALLETS: ["5LDK5NfqLE14Wtq62CKX7JXyxS6rxWNUURa9pw3AG4MY"],
+  DEV_WALLETS: [""],
   // For extension-less devices (e.g. a locked-down work laptop): enter your
   // dev wallet as a WATCH address, then once in the browser console run
   //   localStorage.setItem('devKey', '<your secret key>')
