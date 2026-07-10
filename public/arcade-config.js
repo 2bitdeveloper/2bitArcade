@@ -10,8 +10,8 @@
 // ============================================================
 window.ARCADE_CONFIG = {
   // ---- FILL THESE AT LAUNCH ----
-  CONTRACT_ADDRESS: "7RY1SbM9FUKB1yq1oVH3ZVAHSkeJ8P9nd6UXLGpSpump",              // the $2BA contract address (for display/copy/buy link)
-  TOKEN_MINT: "7RY1SbM9FUKB1yq1oVH3ZVAHSkeJ8P9nd6UXLGpSpump", // the SPL mint (for balances + burns) — usually SAME as CA on pump.fun
+  CONTRACT_ADDRESS: "YOUR_CA_HERE",              // the $2BA contract address (for display/copy/buy link)
+  TOKEN_MINT: "YOUR_TOKEN_MINT_ADDRESS_HERE", // the SPL mint (for balances + burns) — usually SAME as CA on pump.fun
 
   // ---- USUALLY STABLE ----
   SOLANA_RPC_URL: "https://mainnet.helius-rpc.com/?api-key=3480e0ac-2fe9-415c-962c-6ec8c8337290", // swap to your Helius URL before launch
