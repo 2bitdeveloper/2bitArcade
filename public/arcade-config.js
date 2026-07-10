@@ -10,11 +10,11 @@
 // ============================================================
 window.ARCADE_CONFIG = {
   // ---- FILL THESE AT LAUNCH ----
-  CONTRACT_ADDRESS: "YOUR_CA_HERE",              // the $2BA contract address (for display/copy/buy link)
-  TOKEN_MINT:       "YOUR_TOKEN_MINT_ADDRESS_HERE", // the SPL mint (for balances + burns) — usually SAME as CA on pump.fun
+  CONTRACT_ADDRESS: "7RY1SbM9FUKB1yq1oVH3ZVAHSkeJ8P9nd6UXLGpSpump",              // the $2BA contract address (for display/copy/buy link)
+  TOKEN_MINT: "7RY1SbM9FUKB1yq1oVH3ZVAHSkeJ8P9nd6UXLGpSpump", // the SPL mint (for balances + burns) — usually SAME as CA on pump.fun
 
   // ---- USUALLY STABLE ----
-  SOLANA_RPC_URL:   "https://mainnet.helius-rpc.com/?api-key=3480e0ac-2fe9-415c-962c-6ec8c8337290", // swap to your Helius URL before launch
+  SOLANA_RPC_URL: "https://mainnet.helius-rpc.com/?api-key=3480e0ac-2fe9-415c-962c-6ec8c8337290", // swap to your Helius URL before launch
   SUPABASE_URL:     "https://drawbbapvytjytvbedtl.supabase.co",
   SUPABASE_KEY:     "sb_publishable_zzdZsO1BCunEfdGwur6M4g_nUjW5pa2",
 
@@ -24,7 +24,7 @@ window.ARCADE_CONFIG = {
   // (Phantom/Solflare/Backpack). Watch-mode entry of these addresses does NOT
   // bypass, so strangers reading this file can't ride your dev wallet.
   // !!! EMPTY THIS LIST BEFORE LAUNCH !!!
-  DEV_WALLETS: [""],
+  DEV_WALLETS: ["PASTE_YOUR_TEST_WALLET_ADDRESS_HERE"],
   // For extension-less devices (e.g. a locked-down work laptop): enter your
   // dev wallet as a WATCH address, then once in the browser console run
   //   localStorage.setItem('devKey', '<your secret key>')
