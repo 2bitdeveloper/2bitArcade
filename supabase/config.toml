@@ -417,6 +417,10 @@ enabled = true
 enabled = true
 verify_jwt = false
 import_map = "./functions/validate-score/deno.json"
+
+[functions.b1t-chat]
+enabled = true
+verify_jwt = false
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/validate-score/index.ts"
