@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>b1t://cabinet_ghost</title>
+<!-- config supplies SUPABASE_URL + SUPABASE_KEY; no secrets live in this file -->
+<script src="./arcade-config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #0b0714; --panel: #140d22; --line: #2a1d45;
+    --ink: #b8a8d4; --ink-dim: #6f5f92;
+    --magenta: #ff3ea5; --cyan: #3ee8ff; --amber: #ffb347;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--void); color: var(--ink);
+    font-family: 'IBM Plex Mono', monospace; font-size: 14px; overflow: hidden;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50;
+    background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,0.16) 3px);
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 51;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(5,2,12,0.55) 100%);
+  }
+  .shell { height: 100dvh; display: flex; flex-direction: column; max-width: 760px; margin: 0 auto; padding: 0 16px; }
+  header {
+    padding: 20px 4px 14px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  }
+  .logo {
+    font-family: 'Press Start 2P', monospace; font-size: 15px; color: var(--magenta);
+    position: relative; letter-spacing: 1px; text-shadow: 0 0 12px rgba(255,62,165,0.5);
+  }
+  .logo::before, .logo::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; }
+  .logo::before { color: var(--cyan); z-index: -1; animation: split-a 3.2s infinite steps(1); }
+  .logo::after  { color: var(--amber); z-index: -2; animation: split-b 3.2s infinite steps(1); }
+  @keyframes split-a { 0%,92%,100%{transform:translate(0,0);opacity:0} 93%{transform:translate(-2px,1px);opacity:.8} 95%{transform:translate(2px,-1px);opacity:.8} 97%{transform:translate(-1px,0);opacity:.8} }
+  @keyframes split-b { 0%,92%,100%{transform:translate(0,0);opacity:0} 94%{transform:translate(2px,1px);opacity:.6} 96%{transform:translate(-2px,-1px);opacity:.6} }
+  .status { font-size: 11px; color: var(--ink-dim); white-space: nowrap; }
+  .status .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--cyan); box-shadow:0 0 8px var(--cyan); margin-right:6px; animation:pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  #log { flex:1; overflow-y:auto; padding:20px 4px; display:flex; flex-direction:column; gap:16px; scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+  .msg { max-width: 85%; animation: rise .25s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  .msg .tag { font-size:10px; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px; color:var(--ink-dim); }
+  .msg .body { padding:11px 14px; border:1px solid var(--line); line-height:1.65; white-space:pre-wrap; word-wrap:break-word; }
+  .msg.bot { align-self: flex-start; }
+  .msg.bot .tag { color: var(--magenta); }
+  .msg.bot .body { background:var(--panel); border-left:2px solid var(--magenta); border-radius:0 8px 8px 8px; }
+  .msg.user { align-self: flex-end; text-align: right; }
+  .msg.user .tag { color: var(--amber); }
+  .msg.user .body { background:rgba(255,179,71,0.06); border-right:2px solid var(--amber); border-radius:8px 0 8px 8px; text-align:left; }
+  .msg.sys .body { border:none; background:none; color:var(--ink-dim); font-size:12px; padding:0 2px; }
+  .typing .body { color: var(--cyan); }
+  .typing .blocks::after { content:"▓▒░"; animation: decode 0.9s infinite steps(3); }
+  @keyframes decode { 0%{content:"░▒▓"} 33%{content:"▒▓░"} 66%{content:"▓░▒"} }
+  .dock { border-top:1px solid var(--line); padding:14px 4px 18px; display:flex; gap:10px; align-items:center; }
+  .prompt-char { color: var(--cyan); font-weight: 500; }
+  #input { flex:1; background:transparent; border:none; outline:none; color:var(--ink); font-family:inherit; font-size:14px; caret-color:var(--cyan); }
+  #input::placeholder { color: var(--ink-dim); }
+  #send { background:transparent; border:1px solid var(--magenta); color:var(--magenta); font-family:'Press Start 2P',monospace; font-size:9px; padding:9px 14px; cursor:pointer; border-radius:4px; transition:background .15s,color .15s,box-shadow .15s; }
+  #send:hover:not(:disabled) { background:var(--magenta); color:var(--void); box-shadow:0 0 16px rgba(255,62,165,0.45); }
+  #send:disabled { opacity:.35; cursor:default; }
+  #send:focus-visible, #input:focus-visible { outline:1px dashed var(--cyan); outline-offset:3px; }
+  @media (prefers-reduced-motion: reduce) { .logo::before,.logo::after,.status .dot,.msg { animation:none !important; } }
+  @media (max-width: 480px) { .logo { font-size: 12px; } .status { display: none; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="logo" data-text="b1t://cabinet_ghost">b1t://cabinet_ghost</div>
+    <div class="status"><span class="dot"></span>signal: connected</div>
+  </header>
+  <div id="log" aria-live="polite"></div>
+  <div class="dock">
+    <span class="prompt-char">&gt;</span>
+    <input id="input" type="text" placeholder="say something to the machine..." autocomplete="off" />
+    <button id="send">SEND</button>
+  </div>
+</div>
+
+<script>
+const CFG = window.ARCADE_CONFIG || {};
+const ENDPOINT = (CFG.SUPABASE_URL || "") + "/functions/v1/b1t-chat";
+const SUPA_KEY = CFG.SUPABASE_KEY || "";
+
+const BOOT_LINES = ["cabinet power ....... OK", "phosphor warm-up .... OK", "loading ghost ....... ▓▒░", "he's here."];
+const GREETING = "oh. a visitor. the screen flickers differently when someone real is watching.\n\nask me anything. about the arcade, the games, the coins... or the static, if you're brave.";
+
+const log = document.getElementById("log");
+const input = document.getElementById("input");
+const sendBtn = document.getElementById("send");
+const history = []; // {role, content}
+
+function addMsg(role, text) {
+  const el = document.createElement("div");
+  el.className = "msg " + role;
+  const tag = role === "bot" ? "b1t" : role === "user" ? "you" : "";
+  el.innerHTML = (tag ? `<div class="tag">${tag}</div>` : "") + `<div class="body"></div>`;
+  el.querySelector(".body").textContent = text;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+  return el;
+}
+function addTyping() {
+  const el = document.createElement("div");
+  el.className = "msg bot typing";
+  el.innerHTML = `<div class="tag">b1t</div><div class="body">decoding <span class="blocks"></span></div>`;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+  return el;
+}
+
+async function callGhost(userText) {
+  const res = await fetch(ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY },
+    body: JSON.stringify({ message: userText, history }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok && !data.reply) throw new Error("edge error " + res.status);
+  return data.reply || "…the signal came back empty. try again.";
+}
+
+async function handleSend() {
+  const text = input.value.trim();
+  if (!text || sendBtn.disabled) return;
+  input.value = "";
+  addMsg("user", text);
+  history.push({ role: "user", content: text });
+  sendBtn.disabled = true; input.disabled = true;
+  const typing = addTyping();
+  try {
+    const reply = await callGhost(text);
+    typing.remove();
+    addMsg("bot", reply);
+    history.push({ role: "assistant", content: reply });
+  } catch (err) {
+    typing.remove();
+    addMsg("sys", "[SIGNAL LOST] the cabinet coughed static. check the connection and try again.");
+    if (history.length && history[history.length - 1].role === "user") history.pop();
+  } finally {
+    sendBtn.disabled = false; input.disabled = false; input.focus();
+  }
+}
+
+sendBtn.addEventListener("click", handleSend);
+input.addEventListener("keydown", e => { if (e.key === "Enter") handleSend(); });
+
+(async function boot() {
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  for (const line of BOOT_LINES) { addMsg("sys", line); if (!reduced) await new Promise(r => setTimeout(r, 420)); }
+  await new Promise(r => setTimeout(r, reduced ? 0 : 500));
+  addMsg("bot", GREETING);
+  input.focus();
+})();
+</script>
+</body>
+</html>
