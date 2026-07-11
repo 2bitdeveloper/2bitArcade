@@ -21,4 +21,3 @@ the above is fake. This file's commit history is the timestamped record.
 - `index.html` + game pages — the arcade (Vite/TypeScript, GitHub Pages)
 - `public/arcade-config.js` — single source of truth for token + backend config
 - `supabase/` — edge functions (wallet identity system)
-- `bot/` — @b1t_exe X persona bot (runs via `.github/workflows/b1t-workflow.yml`)
