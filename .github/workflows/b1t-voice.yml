@@ -1,0 +1,62 @@
+name: b1t voice
+
+on:
+  schedule:
+    # posts: 07:00 & 15:00 UTC (~12:30pm & 8:30pm IST)
+    - cron: "0 7,15 * * *"
+    # evolve: 22:00 UTC daily (~3:30am IST)
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "post | draft | evolve"
+        default: "draft"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: b1t-voice
+  cancel-in-progress: false
+
+jobs:
+  speak:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: install deps
+        run: npm install twitter-api-v2 @anthropic-ai/sdk dotenv tsx
+
+      - name: decide mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ github.event.inputs.mode }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 22 * * *" ]; then
+            echo "mode=evolve" >> $GITHUB_OUTPUT
+          else
+            echo "mode=post" >> $GITHUB_OUTPUT
+          fi
+
+      - name: run b1t
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          POSTING_ENABLED: ${{ vars.POSTING_ENABLED }}
+        run: npx tsx bot/b1t-voice.ts ${{ steps.mode.outputs.mode }}
+
+      - name: persist persona
+        run: |
+          git config user.name "b1t"
+          git config user.email "b1t@users.noreply.github.com"
+          git add bot/persona.json || true
+          git diff --staged --quiet || git commit -m "b1t: personality drift ▓▒░"
+          git push
