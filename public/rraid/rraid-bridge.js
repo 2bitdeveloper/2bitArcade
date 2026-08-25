@@ -183,54 +183,10 @@
     setTimeout(function(){ t.remove(); }, 5000);
   }
 
+  // Revives used to cost $2BA via an on-chain SPL burn. 2bitArcade is now
+  // fully free -- revive no longer touches a wallet or the chain at all.
   async function executeBurn(amount) {
-    if (!canSign()) { toast('Revives need a signing wallet. Connect Phantom/Solflare on the Arcade home page.'); return false; }
-    if (burnInProgress) return false;
-    burnInProgress = true;
-    try {
-      var w = window;
-      if (typeof w.global === 'undefined') w.global = window;
-      if (typeof w.process === 'undefined') w.process = { env: {} };
-      // web3 libs from CDN (this bridge is a plain script, not bundled)
-      var web3 = await import('https://esm.sh/@solana/web3.js@1');
-      var splToken = await import('https://esm.sh/@solana/spl-token@0.4');
-      var conn = new web3.Connection(SOLANA_RPC_URL, 'confirmed');
-      var owner = new web3.PublicKey(walletAddress);
-      var mint = new web3.PublicKey(TARGET_TOKEN_MINT);
-      var resp = await conn.getParsedTokenAccountsByOwner(owner, { mint: mint });
-      if (resp.value.length === 0) { toast('No $2BA found in wallet.'); return false; }
-      var acct = resp.value[0].pubkey;
-      var programId = resp.value[0].account.owner;
-      var info = resp.value[0].account.data.parsed.info;
-      var decimals = info.tokenAmount.decimals;
-      var uiBal = info.tokenAmount.uiAmount || 0;
-      if (uiBal < amount) { toast('Not enough $2BA to revive (need ' + amount.toLocaleString() + ').'); return false; }
-      var raw = BigInt(amount) * (BigInt(10) ** BigInt(decimals));
-      var ix = splToken.createBurnInstruction(acct, mint, owner, raw, [], programId);
-      var tx = new web3.Transaction().add(ix);
-      var bh = await conn.getLatestBlockhash('confirmed');
-      tx.recentBlockhash = bh.blockhash;
-      tx.feePayer = owner;
-      var provider = window.activeSolanaProvider;
-      var sig;
-      if (typeof provider.signAndSendTransaction === 'function') {
-        var r = await provider.signAndSendTransaction(tx);
-        sig = typeof r === 'string' ? r : r.signature;
-      } else {
-        var signed = await provider.signTransaction(tx);
-        sig = await conn.sendRawTransaction(signed.serialize());
-      }
-      var conf = await conn.confirmTransaction({ signature: sig, blockhash: bh.blockhash, lastValidBlockHeight: bh.lastValidBlockHeight }, 'confirmed');
-      if (conf.value.err) { toast('Burn failed on-chain. Try again.'); return false; }
-      console.log('[BURN] 1,000 $2BA destroyed. Sig: ' + sig);
-      return true;
-    } catch (e) {
-      console.error('[BURN] failed/rejected', e);
-      toast('Revive cancelled.');
-      return false;
-    } finally {
-      burnInProgress = false;
-    }
+    return true;
   }
 
   // Bring the dead hero back to life in place, clear immediate threats,
@@ -256,10 +212,9 @@
       lockedWidth: 360,
       lockedHeight: 49,
       scale: 3,
-      title: burnInProgress ? 'BURNING' : 'REVIVE 1000 2BA',
+      title: 'REVIVE (FREE)',
       action: function () {
-        if (burnInProgress || reviveUsedThisRun) return;
-        if (!canSign()) { toast('Revives need a signing wallet. Connect on the Arcade home page.'); return; }
+        if (reviveUsedThisRun) return;
         executeBurn(REVIVE_COST).then(function (ok) {
           if (ok) { reviveUsedThisRun = true; performRevive(); }
         });

@@ -20,7 +20,6 @@ const TARGET_TOKEN_MINT = _CFG.TOKEN_MINT || '';
 const SOLANA_RPC_URL = _CFG.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
 const SUPABASE_URL = _CFG.SUPABASE_URL || '';
 const SUPABASE_KEY = _CFG.SUPABASE_KEY || '';
-const INITIAL_TOKEN_SUPPLY = _CFG.INITIAL_TOKEN_SUPPLY || 1000000000;
 
 // defaultFeatured: seeds the lazy Susan until enough ratings exist to rank it.
 // category: drives the catalog filter chips.
@@ -207,7 +206,7 @@ function updateInfo() {
     if (title) title.textContent = g.title;
     if (desc) desc.textContent = g.desc;
     if (playBtn) {
-        if (g.url) { playBtn.style.display = 'inline-block'; playBtn.textContent = 'INSERT COIN \u25B6 PLAY'; }
+        if (g.url) { playBtn.style.display = 'inline-block'; playBtn.textContent = '\u25B6 PLAY'; }
         else { playBtn.style.display = 'none'; }
     }
 }
@@ -219,83 +218,8 @@ function startAutoSpin() {
 
 function launchGame(url: string) { window.location.href = url; }
 
-// ---------- ACCESS GATE (wallet + username required; 8h free trial; then >=1000 $2BA) ----------
-async function checkAccess(): Promise<{ allowed: boolean; reason: string }> {
-    if (!walletConnected || !userPublicKey) return { allowed: false, reason: 'connect' };
-    // DEV BYPASS: whitelisted wallets get unrestricted access, but only when
-    // connected via an extension (watch mode never bypasses, so a stranger
-    // typing your dev address gains nothing). Empty DEV_WALLETS at launch.
-    const isWatch = !!localStorage.getItem('watchAddress');
-    const isDevWallet = ((_CFG.DEV_WALLETS as string[]) || []).includes(userPublicKey);
-    let hasDevKey = false;
-    const devKeyTyped = localStorage.getItem('devKey');
-    if (_CFG.DEV_KEY_HASH && devKeyTyped) {
-        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(devKeyTyped));
-        const hex = Array.from(new Uint8Array(buf)).map(x => x.toString(16).padStart(2, '0')).join('');
-        hasDevKey = hex === _CFG.DEV_KEY_HASH;
-    }
-    // extension connect: address alone; watch mode (extension-less devices): address + key
-    if (isDevWallet && (!isWatch || hasDevKey)) {
-        return { allowed: true, reason: 'dev' };
-    }
-    if (!arcadeUsername) return { allowed: false, reason: 'username' };
-    // holding enough tokens => always allowed (skip trial check)
-    if (tokenBalance >= MIN_TOKENS_TO_PLAY) return { allowed: true, reason: 'tokens' };
-    // otherwise consult the server-side trial clock (starts it on first play)
-    try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/check_or_start_trial`, {
-            method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_wallet: userPublicKey })
-        });
-        const data = await res.json();
-        const secondsLeft = (data && typeof data.seconds_left === 'number') ? data.seconds_left : 0;
-        if (secondsLeft > 0) return { allowed: true, reason: 'trial:' + secondsLeft };
-        return { allowed: false, reason: 'tokengate' };
-    } catch (e) {
-        // if the trial service is unreachable, fail OPEN for holders only; others blocked
-        return { allowed: false, reason: 'tokengate' };
-    }
-}
-
-async function attemptLaunch(url: string) {
-    const access = await checkAccess();
-    if (access.allowed) { launchGame(url); return; }
-    if (access.reason === 'connect') { showWalletModal(); return; }
-    if (access.reason === 'username') { showUsernameModal(false); return; }
-    showTokenGateModal(); // trial over + under 1000 $2BA
-}
-
-function showTokenGateModal() {
-    if (document.getElementById('arcade-gate-modal')) return;
-    const overlay = document.createElement('div');
-    overlay.id = 'arcade-gate-modal';
-    overlay.innerHTML = `
-      <div class="wm-dialog">
-        <h2>\uD83D\uDD12 ARCADE LOCKED</h2>
-        <p class="wm-hint">Your 8-hour free trial has ended. To keep playing every cabinet in
-        the arcade, hold at least <b>${MIN_TOKENS_TO_PLAY.toLocaleString()} $2BA</b> in your
-        connected wallet. Your balance unlocks everything \u2014 you never spend it to play
-        (only revives burn tokens).</p>
-        <p class="wm-hint">Your balance: <b>${Math.floor(tokenBalance).toLocaleString()} $2BA</b></p>
-        <a id="gate-buy" class="wm-btn wm-go" href="#" target="_blank" rel="noopener">GET $2BA</a>
-        <button class="wm-btn" id="gate-refresh">I ADDED TOKENS \u2014 RE-CHECK</button>
-        <button class="wm-cancel" id="gate-close">[ CLOSE ]</button>
-      </div>`;
-    document.body.appendChild(overlay);
-    const buy = document.getElementById('gate-buy') as HTMLAnchorElement;
-    // buy link: pump.fun token page if CA is set, else a placeholder
-    buy.href = (CONTRACT_ADDRESS && CONTRACT_ADDRESS !== 'YOUR_CA_HERE')
-        ? `https://pump.fun/coin/${CONTRACT_ADDRESS}` : '#';
-    document.getElementById('gate-refresh')?.addEventListener('click', async () => {
-        await syncBalance();
-        (document.querySelector('#arcade-gate-modal .wm-hint b') as HTMLElement)?.replaceWith();
-        overlay.remove();
-        // re-evaluate immediately
-        if (tokenBalance >= MIN_TOKENS_TO_PLAY) showToast('Unlocked! ' + Math.floor(tokenBalance).toLocaleString() + ' $2BA \u2014 enjoy the arcade.');
-        else showTokenGateModal();
-    });
-    document.getElementById('gate-close')?.addEventListener('click', () => overlay.remove());
-}
-
+// ---------- 2bitArcade is free and open to everyone; nothing gates play. ----------
+function attemptLaunch(url: string) { launchGame(url); }
 function showToast(msg: string) {
     document.getElementById('arcade-toast')?.remove();
     const t = document.createElement('div');
@@ -501,31 +425,13 @@ async function fetchActivePilots() {
     } catch (e) { el.innerHTML = '\u25CF -- Active Players'; }
 }
 
-function formatCompact(n: number): string {
-    if (n >= 1e9) return (n / 1e9).toFixed(2).replace(/\.?0+$/, '') + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.?0+$/, '') + 'K';
-    return Math.floor(n).toString();
-}
-
-async function fetchTokensBurned() {
-    const el = document.getElementById('stat-burned');
-    if (!el) return;
-    try {
-        const res = await fetch(SOLANA_RPC_URL, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTokenSupply', params: [TARGET_TOKEN_MINT] })
-        });
-        const data = await res.json();
-        const supply = data.result?.value?.uiAmount;
-        if (typeof supply === 'number') {
-            const burned = Math.max(0, INITIAL_TOKEN_SUPPLY - supply);
-            el.innerHTML = `\uD83D\uDD25 ${formatCompact(burned)} $2BA Burned`;
-            return;
-        }
-        throw new Error();
-    } catch (e) { el.innerHTML = '\uD83D\uDD25 -- $2BA Burned'; }
-}
+// Revives no longer burn tokens, so a "burned" counter would just be a
+// frozen, meaningless number once the mechanic stops running. Removed
+// rather than left to quietly go stale.
+// Revives no longer burn tokens, so a "burned" counter would just be a
+// frozen, meaningless number once the mechanic stops running. Removed
+// rather than left to quietly go stale (see index.html: #stat-burned
+// no longer exists either).
 
 function startPresence() {
     const beat = () => {
@@ -533,8 +439,8 @@ function startPresence() {
         fetch(`${SUPABASE_URL}/rest/v1/rpc/pilot_heartbeat`, { method: 'POST', headers: sbHeaders, body: JSON.stringify({ p_session_id: presenceSessionId }) }).catch(() => {});
     };
     beat(); setInterval(beat, 45000);
-    fetchActivePilots(); fetchTokensBurned();
-    setInterval(() => { fetchActivePilots(); fetchTokensBurned(); }, 60000);
+    fetchActivePilots();
+    setInterval(() => { fetchActivePilots(); }, 60000);
 }
 
 // ============================================================
@@ -542,7 +448,6 @@ function startPresence() {
 // ============================================================
 let walletConnected = false, userPublicKey = '', tokenBalance = 0;
 let arcadeUsername = localStorage.getItem('arcadeUsername') || '';
-const MIN_TOKENS_TO_PLAY = _CFG.MIN_TOKENS_TO_PLAY || 1000; // required $2BA after free trial
 
 function walletLabel() {
     const btn = document.getElementById('wallet-btn');
@@ -891,17 +796,6 @@ function boot() {
     });
     safe('ratings', fetchRatings);
     safe('champions', fetchChampions);
-    safe('bounce', () => {
-        let reason = '';
-        try { reason = sessionStorage.getItem('gateBounce') || ''; sessionStorage.removeItem('gateBounce'); } catch (e) {}
-        if (!reason) return;
-        // wait for wallet restore to resolve, then show the right prompt
-        setTimeout(() => {
-            if (reason === 'connect') showWalletModal();
-            else if (reason === 'username') showUsernameModal(false);
-            else showTokenGateModal();
-        }, 800);
-    });
     safe('inputs', wireInputs);
     safe('ca', setupCA);
     safe('stats', startPresence);

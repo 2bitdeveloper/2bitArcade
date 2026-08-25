@@ -135,68 +135,11 @@ export class Web3Service {
         return this.walletConnected && !!(window as any).activeSolanaProvider;
     }
 
+    // Revives used to cost $2BA via an on-chain SPL burn instruction.
+    // 2bitArcade is now fully free -- revive no longer touches a wallet,
+    // Solana, or the token supply at all.
     public static async executeBurnTransaction(amount: number): Promise<boolean> {
-        if (this.DEV_MODE) { this.tokenBalance -= amount; console.log(`[DEV] Simulated burn of ${amount}`); return true; }
-        if (!this.walletConnected || !this.userPublicKey) return false;
-        const provider = (window as any).activeSolanaProvider;
-        if (!provider) {
-            this.showToast("Revives need a signing wallet. Connect Phantom/Solflare on the Arcade home page.");
-            return false;
-        }
-        if (this.burnInProgress) return false;
-        this.burnInProgress = true;
-        try {
-            // Lazy-load web3 libs + polyfills so the game boots without them
-            const w = window as any;
-            if (typeof w.global === 'undefined') w.global = window;
-            if (typeof w.process === 'undefined') w.process = { env: {} };
-            if (typeof w.Buffer === 'undefined') {
-                try { const b = await import('buffer'); w.Buffer = b.Buffer; } catch (e) {}
-            }
-            const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
-            const { createBurnInstruction } = await import('@solana/spl-token');
-
-            const connection = new Connection(this.SOLANA_RPC_URL, 'confirmed');
-            const owner = new PublicKey(this.userPublicKey);
-            const mint = new PublicKey(this.TARGET_TOKEN_MINT);
-
-            const resp = await connection.getParsedTokenAccountsByOwner(owner, { mint });
-            if (resp.value.length === 0) return false;
-            const tokenAccountPubkey = resp.value[0].pubkey;
-            const tokenProgramId = resp.value[0].account.owner;
-            const info = resp.value[0].account.data.parsed.info;
-            const decimals: number = info.tokenAmount.decimals;
-            const uiBalance: number = info.tokenAmount.uiAmount || 0;
-            if (uiBalance < amount) { this.tokenBalance = uiBalance; return false; }
-
-            const rawAmount = BigInt(amount) * (10n ** BigInt(decimals));
-            const tx = new Transaction().add(
-                createBurnInstruction(tokenAccountPubkey, mint, owner, rawAmount, [], tokenProgramId)
-            );
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-            tx.recentBlockhash = blockhash;
-            tx.feePayer = owner;
-
-            let signature: string;
-            if (typeof provider.signAndSendTransaction === 'function') {
-                const r = await provider.signAndSendTransaction(tx);
-                signature = typeof r === 'string' ? r : r.signature;
-            } else {
-                const signed = await provider.signTransaction(tx);
-                signature = await connection.sendRawTransaction(signed.serialize());
-            }
-            const conf = await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
-            if (conf.value.err) return false;
-
-            console.log(`[BURN] ${amount} $2BA destroyed. Sig: ${signature}`);
-            this.tokenBalance -= amount;
-            return true;
-        } catch (e) {
-            console.error("[BURN] Failed or rejected", e);
-            return false;
-        } finally {
-            this.burnInProgress = false;
-        }
+        return true;
     }
 
     private static showToast(message: string) {

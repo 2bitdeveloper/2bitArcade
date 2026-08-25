@@ -1,11 +1,12 @@
 # 2bitArcade - Licenses
 
-## IMPORTANT: 2bit Developer's own games are NOT open source
-JumpFighter, Origami Ascent, Neon Runner, and the 2bitArcade site itself
-are copyrighted, all-rights-reserved works. They may not be hosted or
-reused without written permission. See the LICENSE file. The source is
-public for transparency/verification only. The MIT/permissive terms below
-apply ONLY to the third-party games listed.
+# 2bitArcade - Licenses
+
+## 2bit Developer's own games are open source (MIT)
+JumpFighter, Origami Ascent, Neon Runner, Sunset Drift, Jungle Strike, and
+the 2bitArcade site itself are MIT-licensed. See the LICENSE file for the
+full text. Third-party games below remain under their own original
+licenses, which take precedence for that game's own source.
 
 ---
 

@@ -16,9 +16,8 @@
         <h1 id="arcade-title">2BIT<span>ARCADE</span></h1>
         <div id="stats-bar">
           <div class="stat-chip" id="stat-pilots">&#9679; Syncing players...</div>
-          <div class="stat-chip" id="stat-burned">&#128293; Syncing burn...</div>
           <button id="wallet-btn">CONNECT WALLET</button>
-          <button id="tokenomics-btn">TOKENOMICS</button>
+          <button id="tokenomics-btn">ABOUT</button>
           <button id="contact-btn">CONTACT US</button>
           <a id="ghost-btn" href="./b1t.html" title="talk to the cabinet ghost">&#9679; TALK TO b1t</a>
         </div>
@@ -37,7 +36,7 @@
         <section id="game-info">
           <h2 id="game-title"></h2>
           <p id="game-desc"></p>
-          <button id="play-btn">INSERT COIN &#9654; PLAY</button>
+          <button id="play-btn">&#9654; PLAY</button>
         </section>
 
         <!-- FULL CATALOG -->
@@ -64,104 +63,60 @@
             <div class="champ-col">
               <h3>&#9733; TODAY'S TOP 3</h3>
               <ol id="champ-daily"><li class="champ-empty">Loading...</li></ol>
-              <p class="champ-note">24-hour full unlock</p>
+              <p class="champ-note">Featured for 24 hours</p>
             </div>
             <div class="champ-col">
               <h3>&#9733; THIS WEEK'S TOP 10</h3>
               <ol id="champ-weekly"><li class="champ-empty">Loading...</li></ol>
-              <p class="champ-note">72-hour full unlock</p>
+              <p class="champ-note">Featured for 72 hours</p>
             </div>
           </div>
         </section>
 
-        <!-- TOKENOMICS -->
+        <!-- ABOUT / OPEN SOURCE -->
         <section id="tokenomics">
-          <h2>$2BA TOKENOMICS</h2>
+          <h2>ABOUT 2BITARCADE</h2>
 
           <div class="tok-block tok-access">
-            <h3>&#128273; HOW ACCESS WORKS</h3>
-            <p>Every wallet gets <b>8 hours of free play</b> across the whole arcade, starting
-            the first time you launch a game &mdash; no tokens needed to try it out. After that
-            free window ends, keeping access is simple: <b>hold at least 1,000 $2BA</b> in your
-            connected wallet and the entire arcade stays unlocked. You never spend that balance to
-            play &mdash; simply holding it is your key. (Reviving mid-run is the only thing that
-            burns tokens; see below.) Fall below 1,000 $2BA after your trial and the cabinets lock
-            until you top back up.</p>
+            <h3>&#128275; FREE. FOR EVERYONE. NO CATCH.</h3>
+            <p>Every cabinet in the arcade is free to play, for anyone, with no wallet, no
+            token, and no trial clock. Insert coin, or don't &mdash; either way, you play.</p>
           </div>
 
           <div class="tok-block">
-            <h3>FIXED SUPPLY. FOREVER.</h3>
-            <p>1,000,000,000 $2BA minted at launch &mdash; and that is the most that will ever
-            exist. There is no mint authority to print more. 2.5% (25,000,000) is reserved for the
-            developer; everything else lives on the open market.</p>
+            <h3>FULLY OPEN SOURCE</h3>
+            <p>The entire 2bitArcade &mdash; every game, the site itself, and the backend
+            functions &mdash; is <b>MIT-licensed</b> and hosted on <b>GitHub Pages</b>. Read it,
+            fork it, run your own copy, build on it. See the <b>LICENSE</b> file in the repo for
+            the exact terms (third-party games keep their own original licenses, listed in
+            <b>LICENSES.md</b>).</p>
           </div>
 
           <div class="tok-block">
-            <h3>THE BURN ENGINE</h3>
-            <p>Dying isn't the end in the 2bitArcade &mdash; reviving mid-run costs
-            <b>1,000 $2BA</b>. But those tokens aren't transferred to some "burn wallet" where
-            they technically still exist. Every revive executes the <b>SPL Token burn
-            instruction</b>: the tokens are destroyed at the mint itself, and the total supply
-            of $2BA literally decreases on-chain. Open the mint on Solscan and watch the supply
-            number fall with every death defied. The counter at the top of this page reads that
-            same on-chain figure live.</p>
-          </div>
-
-          <div class="tok-block">
-            <h3>WHY SHRINKING SUPPLY MATTERS</h3>
-            <p>Supply only moves in one direction: down. Every revive, by every player, in every
-            game, permanently removes $2BA from existence. The tokens in your wallet therefore
-            represent a continuously growing share of everything that exists &mdash; the more the
-            arcade is played, the scarcer $2BA becomes. Scarcity is one side of the value
-            equation; demand is the other. Nothing here is financial advice &mdash; verify the
-            burn yourself on-chain and draw your own conclusions.</p>
-          </div>
-
-          <div class="tok-block">
-            <h3>HOLD TO UNLOCK</h3>
-            <p>Your $2BA balance is your arcade pass. Ships, guardians, game modes and
-            backgrounds unlock by <b>holding</b> tokens in your connected wallet &mdash; never by
-            spending them. Connect once up top; every cabinet in the arcade reads the same
-            wallet.</p>
+            <h3>WHY THE CHANGE</h3>
+            <p>2bitArcade launched with a token-gated access model. We've since moved to a fully
+            free, fully open model instead &mdash; simpler for players, and truer to what we
+            actually wanted to build: a good arcade, not a paywall.</p>
           </div>
 
           <div class="tok-block">
             <h3>BUILD WITH US</h3>
             <p>Are you a game developer? The 2bitArcade is an open cabinet floor. Build a
-            browser game, plug it into the $2BA economy &mdash; hold-to-unlock content, on-chain
-            burns, and the shared champion leaderboards &mdash; and we'll host it here beside
-            Origami Ascent and JumpFighter. Hit <b>CONTACT US</b> at the top of the page and
-            pitch your game.</p>
-          </div>
-
-          <div class="tok-block">
-            <h3>OPEN &amp; VERIFIABLE</h3>
-            <p>The entire 2bitArcade is hosted on <b>GitHub Pages</b> for one reason:
-            transparency. Every line of the site and every game runs from a public repository
-            you can read, audit and verify yourself &mdash; the burn logic, the unlock rules,
-            the leaderboard calls, all of it. No black boxes, no "trust us," no vaporware. What
-            you see running is exactly what is published, and anyone can confirm it on-chain and
-            in-repo.</p>
+            browser game and we'll host it here beside JumpFighter and the rest. Hit
+            <b>CONTACT US</b> at the top of the page and pitch your game.</p>
           </div>
 
           <div class="tok-block">
             <h3>ROADMAP</h3>
             <p><b>More games, continuously.</b> The cabinet floor keeps growing &mdash; our own
             titles plus properly-licensed games from other builders.</p>
-            <p><b>A secondary token, later.</b> At a future date we intend to launch a second
-            token designed as a reward layer for both players and publishers who contribute to
-            the arcade. Details will be announced when it is ready; nothing here is a promise of
-            profit or a commitment to a date.</p>
-            <p><b>$2BA stays the ticket.</b> Through all of it, $2BA remains the arcade's access
-            token &mdash; the key that unlocks games, modes, ships and guardians held behind the
-            token wall. Its role doesn't change.</p>
           </div>
 
           <div class="tok-block">
-            <h3>CHAMPION REWARDS</h3>
-            <p>Every day, the <b>top 3 players</b> across the arcade earn 24 hours with everything
-            unlocked. Every week, the <b>top 10</b> earn a 72-hour full unlock. Skill is the
-            other currency here.</p>
+            <h3>LEADERBOARDS</h3>
+            <p>Every day, the <b>top 3 players</b> across the arcade get featured on the
+            champions board. Every week, the <b>top 10</b> get the same. No unlocks attached
+            &mdash; just bragging rights.</p>
           </div>
         </section>
       </main>
